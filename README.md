@@ -9,7 +9,7 @@ A mod that displays player stats from FlowPvP.gg in their nametags, tablist and 
 - Player Lookup: With the command /flowtiers <player> you can lookup a players stats across all gamemodes + global ingame!
 
 ## Commands
-- /flowtiers <player> - Displays the specified player's stats across all gamemodes + global. 
+- /flowrank <player> - Displays the specified player's stats across all gamemodes + global. 
   NOTE: Does ONLY work if the player you specify has played atleast 1 ranked game on FlowPvP.gg
 
 ## Requirements
@@ -19,7 +19,7 @@ A mod that displays player stats from FlowPvP.gg in their nametags, tablist and 
 - Java 21+
 
 ## How to install
-1. Download the latest release from the [modrinth page](https://modrinth.com/mod/flowtiers/versions) or the [releases page](https://github.com/ykk4ga/FlowTiers/releases)
+1. Download the latest release from the [modrinth versions page](https://modrinth.com/mod/flowtiers/versions) or the [releases page](https://github.com/ykk4ga/FlowTiers/releases)
 2. Place the `.jar` file in your `.minecraft/mods` folder (Alternatively in your Launcher's mods location)
 3. Launch Minecraft with Fabric
 
@@ -29,6 +29,8 @@ Guide will be added later on
 ## Credits
 - Stacksyz(me) - Developer
 - Fabric API
+- Claude(AI) - Small stuff here and there
+- [Moose1301](https://github.com/Moose1301) - Contributor
 
 ## Links
 - [FlowPvP Website](https://flowpvp.gg/)
