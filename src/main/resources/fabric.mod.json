@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "flowtiers",
+  "version": "${version}",
+  "name": "FlowTiers",
+  "description": "A mod that displays player stats from FlowPvP.gg in their nametags, tablist and HUD.",
+  "authors": ["Stacksyz"],
+  "contact": {},
+  "license": "Apache-2.0",
+  "icon": "assets/flowtiers/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "main": ["com.flowpvp.FlowPvPMod"],
+    "client": ["com.flowpvp.client.FlowPvPClient"]
+  },
+  "mixins": ["flowtiers.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=21"
+  }
+}
