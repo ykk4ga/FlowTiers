@@ -3,6 +3,7 @@ package com.flowpvp.client.command;
 import com.flowpvp.client.FlowPvPClient;
 import com.flowpvp.client.config.ModConfig;
 import com.flowpvp.client.data.PlayerStats;
+import com.flowpvp.client.data.RankedLadder;
 import com.flowpvp.client.data.TierInfo;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -92,9 +93,9 @@ public final class FlowRankCommand {
     /** Line 1: [FlowTiers] ZursToes — Iron III | 800 ELO | #15,041 globally
      *  Always shows global stats regardless of the configured display mode. */
     private static Text buildHeader(PlayerStats stats) {
-        TierInfo tier = stats.getDisplayTier("GLOBAL");
-        int elo  = stats.getDisplayElo("GLOBAL");
-        int pos  = stats.getDisplayPosition("GLOBAL");
+        TierInfo tier = stats.getDisplayTier(RankedLadder.GLOBAL);
+        int elo  = stats.getDisplayElo(RankedLadder.GLOBAL);
+        int pos  = stats.getDisplayPosition(RankedLadder.GLOBAL);
 
         NumberFormat fmt = NumberFormat.getNumberInstance(Locale.US);
 
@@ -118,7 +119,8 @@ public final class FlowRankCommand {
     MutableText out = Text.empty();
     boolean first = true;
 
-    for (String key : LADDER_ORDER) {
+    for (RankedLadder key : RankedLadder.values()) {
+        if (key == RankedLadder.GLOBAL) continue;
         PlayerStats.LadderStats ls = stats.perLadder.get(key);
         if (ls == null || ls.isUnranked()) continue;
 

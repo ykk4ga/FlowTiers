@@ -18,12 +18,12 @@ public final class PlayerStats {
     /** Global leaderboard position (-1 if unranked/not on leaderboard). */
     public final int globalPosition;
     /** Per-ladder stats. Keys: SWORD, AXE, UHC, VANILLA, MACE, DIAMOND_POT, NETHERITE_OP, SMP, DIAMOND_SMP */
-    public final Map<String, LadderStats> perLadder;
+    public final Map<RankedLadder, LadderStats> perLadder;
     /** System.currentTimeMillis() when this entry was fetched. */
     public final long fetchedAt;
 
     public PlayerStats(String uuid, String lastKnownName, int globalElo, int globalPosition,
-                       Map<String, LadderStats> perLadder, long fetchedAt) {
+                       Map<RankedLadder, LadderStats> perLadder, long fetchedAt) {
         this.uuid = uuid;
         this.lastKnownName = lastKnownName;
         this.globalElo = globalElo;
@@ -41,48 +41,48 @@ public final class PlayerStats {
     // -------------------------------------------------------------------------
 
     /** ELO for the given display mode ("GLOBAL" or a ladder key). */
-    public int getDisplayElo(String mode) {
-        if ("GLOBAL".equals(mode)) return globalElo;
+    public int getDisplayElo(RankedLadder mode) {
+        if (mode == RankedLadder.GLOBAL) return globalElo;
         LadderStats ls = perLadder.get(mode);
         return ls != null ? ls.totalRating : 800;
     }
 
     /** Leaderboard position for the given display mode (-1 if unavailable). */
-    public int getDisplayPosition(String mode) {
-        if ("GLOBAL".equals(mode)) return globalPosition;
+    public int getDisplayPosition(RankedLadder mode) {
+        if (mode == RankedLadder.GLOBAL) return globalPosition;
         LadderStats ls = perLadder.get(mode);
         return ls != null ? ls.position : -1;
     }
 
     /** Tier derived from the ELO for the given display mode. */
-    public TierInfo getDisplayTier(String mode) {
+    public TierInfo getDisplayTier(RankedLadder mode) {
         return TierInfo.fromElo(getDisplayElo(mode));
     }
 
     /** Wins for the given display mode (0 for GLOBAL). */
-    public int getDisplayWins(String mode) {
-        if ("GLOBAL".equals(mode)) return 0;
+    public int getDisplayWins(RankedLadder mode) {
+        if (mode == RankedLadder.GLOBAL) return 0;
         LadderStats ls = perLadder.get(mode);
         return ls != null ? ls.wins : 0;
     }
 
     /** Losses for the given display mode (0 for GLOBAL). */
-    public int getDisplayLosses(String mode) {
-        if ("GLOBAL".equals(mode)) return 0;
+    public int getDisplayLosses(RankedLadder mode) {
+        if (mode == RankedLadder.GLOBAL) return 0;
         LadderStats ls = perLadder.get(mode);
         return ls != null ? ls.losses : 0;
     }
 
     /** Current streak for the given display mode (0 for GLOBAL). Negative = losing streak. */
-    public int getDisplayStreak(String mode) {
-        if ("GLOBAL".equals(mode)) return 0;
+    public int getDisplayStreak(RankedLadder mode) {
+        if (mode == RankedLadder.GLOBAL) return 0;
         LadderStats ls = perLadder.get(mode);
         return ls != null ? ls.currentStreak : 0;
     }
 
     /** How many placement matches have been played for this mode. */
-    public int getPlacementsPlayed(String mode) {
-        if ("GLOBAL".equals(mode)) return 0;
+    public int getPlacementsPlayed(RankedLadder mode) {
+        if (mode == RankedLadder.GLOBAL) return 0;
         LadderStats ls = perLadder.get(mode);
         return ls != null ? ls.placementMatchesPlayed : 0;
     }

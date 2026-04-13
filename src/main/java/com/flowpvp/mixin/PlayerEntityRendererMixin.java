@@ -3,6 +3,7 @@ package com.flowpvp.mixin;
 import com.flowpvp.client.FlowPvPClient;
 import com.flowpvp.client.config.ModConfig;
 import com.flowpvp.client.data.PlayerStats;
+import com.flowpvp.client.data.RankedLadder;
 import com.flowpvp.client.data.TierInfo;
 //? if >=1.21.9 {
 /*import net.minecraft.client.render.entity.state.PlayerEntityRenderState;*/
@@ -79,7 +80,7 @@ public abstract class PlayerEntityRendererMixin {
     // =========================================================================
 
     private static Text buildTierText(PlayerStats stats) {
-        String mode   = ModConfig.INSTANCE.displayMode;
+        RankedLadder mode   = ModConfig.INSTANCE.displayMode;
         TierInfo tier = stats.getDisplayTier(mode);
         int elo       = stats.getDisplayElo(mode);
         int pos       = stats.getDisplayPosition(mode);

@@ -3,6 +3,7 @@ package com.flowpvp.client.hud;
 import com.flowpvp.client.FlowPvPClient;
 import com.flowpvp.client.config.ModConfig;
 import com.flowpvp.client.data.PlayerStats;
+import com.flowpvp.client.data.RankedLadder;
 import com.flowpvp.client.data.TierInfo;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -76,7 +77,7 @@ public final class FlowPvPHud {
     private void drawStats(DrawContext ctx, TextRenderer tr, int x, int y) {
         ModConfig cfg       = ModConfig.INSTANCE;
         PlayerStats stats   = cachedStats;
-        String mode         = cfg.displayMode;
+        RankedLadder mode         = cfg.displayMode;
         NumberFormat fmt    = NumberFormat.getNumberInstance(Locale.US);
 
         TierInfo tier = stats.getDisplayTier(mode);
@@ -197,7 +198,7 @@ public final class FlowPvPHud {
     public int getWidgetWidth(MinecraftClient mc) {
         TextRenderer tr = mc.textRenderer;
         if (cachedStats == null) return 130;
-        String mode = ModConfig.INSTANCE.displayMode;
+        RankedLadder mode = ModConfig.INSTANCE.displayMode;
         String tierElo = cachedStats.getDisplayTier(mode).displayName
                        + "  " + cachedStats.getDisplayElo(mode) + " ELO";
         return Math.max(tr.getWidth("FlowTiers"), tr.getWidth(tierElo)) + PADDING * 2;
@@ -205,7 +206,7 @@ public final class FlowPvPHud {
 
     public int getWidgetHeight() {
         ModConfig cfg = ModConfig.INSTANCE;
-        boolean perLadder = !"GLOBAL".equals(cfg.displayMode);
+        boolean perLadder = !RankedLadder.GLOBAL.equals(cfg.displayMode);
         int lines = 1; // header
         if (cfg.hudShowTierName || cfg.hudShowElo) lines++;
         if (cfg.hudShowPosition) lines++;

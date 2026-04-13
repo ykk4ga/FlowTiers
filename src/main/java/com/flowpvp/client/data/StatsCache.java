@@ -10,7 +10,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.*;
 
 /**
@@ -30,13 +32,13 @@ public final class StatsCache {
     private static final String USER_AGENT = "FlowTiers-Mod/1.0";
 
     /** Background fetch rate limiting. */
-    private static final int  CHUNK_SIZE       = 5;
+    private static final int CHUNK_SIZE = 5;
     private static final long INTERVAL_SECONDS = 5;
 
     private final HttpClient httpClient;
 
     // Main stats cache — keyed by lowercase dashed UUID string
-    private final ConcurrentHashMap<String, PlayerStats> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, PlayerStats> cache = new ConcurrentHashMap<>();
 
     // Reverse lookup: lowercase username → UUID string (populated on every successful fetch)
     private final ConcurrentHashMap<String, String> usernameToUuid = new ConcurrentHashMap<>();
@@ -45,14 +47,14 @@ public final class StatsCache {
     private final ConcurrentHashMap<String, String> mojangUuidCache = new ConcurrentHashMap<>();
 
     // In-flight immediate fetches (UUID key)
-    private final ConcurrentHashMap<String, CompletableFuture<PlayerStats>> pending = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, CompletableFuture<PlayerStats>> pending = new ConcurrentHashMap<>();
 
     // In-flight Mojang UUID lookups (lowercase username key)
     private final ConcurrentHashMap<String, CompletableFuture<String>> pendingUuidLookup = new ConcurrentHashMap<>();
 
     // Rate-limited background fetch queue
-    private final ConcurrentHashMap<String, CompletableFuture<PlayerStats>> queued = new ConcurrentHashMap<>();
-    private final LinkedBlockingDeque<String> fetchQueue = new LinkedBlockingDeque<>();
+    private final ConcurrentHashMap<UUID, CompletableFuture<PlayerStats>> queued = new ConcurrentHashMap<>();
+    private final LinkedBlockingDeque<UUID> fetchQueue = new LinkedBlockingDeque<>();
 
     private final ScheduledExecutorService scheduler;
 
@@ -67,7 +69,7 @@ public final class StatsCache {
             t.setDaemon(true);
             return t;
         });
-        scheduler.scheduleAtFixedRate(
+        this.scheduler.scheduleAtFixedRate(
                 this::processQueue,
                 INTERVAL_SECONDS, INTERVAL_SECONDS, TimeUnit.SECONDS
         );
@@ -82,20 +84,20 @@ public final class StatsCache {
      * Use for the own-player HUD and /flowrank lookups.
      */
     public CompletableFuture<PlayerStats> getStatsByUuid(UUID uuid) {
-        String key = toKey(uuid);
+        UUID key = uuid;
         long ttl = ModConfig.INSTANCE.cacheMinutes * 60_000L;
 
-        PlayerStats cached = cache.get(key);
+        PlayerStats cached = this.cache.get(key);
         if (cached != null && !cached.isStale(ttl)) {
             return CompletableFuture.completedFuture(cached);
         }
 
-        return pending.computeIfAbsent(key, k -> fetchFromApi(k)
+        return this.pending.computeIfAbsent(key, k -> fetchFromApi(k)
                 .whenComplete((stats, ex) -> {
-                    pending.remove(k);
+                    this.pending.remove(k);
                     if (stats != null) {
-                        cache.put(k, stats);
-                        usernameToUuid.put(stats.lastKnownName.toLowerCase(), k);
+                        this.cache.put(key, stats);
+                        this.usernameToUuid.put(stats.lastKnownName.toLowerCase(), k.toString());
                     }
                 }));
     }
@@ -112,8 +114,8 @@ public final class StatsCache {
         }
 
         // Already have the UUID from a previous fetch?
-        String knownUuid = usernameToUuid.get(username.toLowerCase());
-        if (knownUuid == null) knownUuid = mojangUuidCache.get(username.toLowerCase());
+        String knownUuid = this.usernameToUuid.get(username.toLowerCase());
+        if (knownUuid == null) knownUuid = this.mojangUuidCache.get(username.toLowerCase());
         if (knownUuid != null) {
             try {
                 return getStatsByUuid(UUID.fromString(knownUuid));
@@ -137,19 +139,19 @@ public final class StatsCache {
      * Use for tab list and nametag auto-fetching to avoid hammering the API.
      */
     public CompletableFuture<PlayerStats> scheduleStatsByUuid(UUID uuid) {
-        String key = toKey(uuid);
+        UUID key = uuid;
         long ttl = ModConfig.INSTANCE.cacheMinutes * 60_000L;
 
-        PlayerStats cached = cache.get(key);
+        PlayerStats cached = this.cache.get(key);
         if (cached != null && !cached.isStale(ttl)) {
             return CompletableFuture.completedFuture(cached);
         }
 
-        CompletableFuture<PlayerStats> inFlight = pending.get(key);
+        CompletableFuture<PlayerStats> inFlight = this.pending.get(key);
         if (inFlight != null) return inFlight;
 
-        return queued.computeIfAbsent(key, k -> {
-            fetchQueue.offer(k);
+        return this.queued.computeIfAbsent(key, k -> {
+            this.fetchQueue.offer(k);
             return new CompletableFuture<>();
         });
     }
@@ -159,7 +161,7 @@ public final class StatsCache {
      * Safe to call from the render thread.
      */
     public PlayerStats getCachedByUuid(UUID uuid) {
-        PlayerStats stats = cache.get(toKey(uuid));
+        PlayerStats stats = this.cache.get(uuid);
         if (stats != null && stats.isStale(ModConfig.INSTANCE.cacheMinutes * 60_000L)) return null;
         return stats;
     }
@@ -170,7 +172,7 @@ public final class StatsCache {
      */
     public PlayerStats getCachedByUsername(String username) {
         if (username == null) return null;
-        String uuidStr = usernameToUuid.get(username.toLowerCase());
+        String uuidStr = this.usernameToUuid.get(username.toLowerCase());
         if (uuidStr == null) return null;
         try {
             return getCachedByUuid(UUID.fromString(uuidStr));
@@ -181,12 +183,12 @@ public final class StatsCache {
 
     /** Drop a cached entry so the next call re-fetches. */
     public void invalidate(UUID uuid) {
-        cache.remove(toKey(uuid));
+        this.cache.remove(uuid);
     }
 
     /** Shut down the scheduler cleanly when the game closes. */
     public void shutdown() {
-        scheduler.shutdownNow();
+        this.scheduler.shutdownNow();
     }
 
     // -------------------------------------------------------------------------
@@ -195,15 +197,15 @@ public final class StatsCache {
 
     private void processQueue() {
         for (int i = 0; i < CHUNK_SIZE; i++) {
-            String key = fetchQueue.poll();
+            UUID key = this.fetchQueue.poll();
             if (key == null) break;
 
-            CompletableFuture<PlayerStats> future = queued.remove(key);
+            CompletableFuture<PlayerStats> future = this.queued.remove(key);
             if (future == null || future.isDone()) continue;
 
             // May have been fetched by an immediate call while waiting in queue
             long ttl = ModConfig.INSTANCE.cacheMinutes * 60_000L;
-            PlayerStats cached = cache.get(key);
+            PlayerStats cached = this.cache.get(key);
             if (cached != null && !cached.isStale(ttl)) {
                 future.complete(cached);
                 continue;
@@ -211,8 +213,8 @@ public final class StatsCache {
 
             fetchFromApi(key).whenComplete((stats, ex) -> {
                 if (stats != null) {
-                    cache.put(key, stats);
-                    usernameToUuid.put(stats.lastKnownName.toLowerCase(), key);
+                    this.cache.put(key, stats);
+                    this.usernameToUuid.put(stats.lastKnownName.toLowerCase(), key.toString());
                     future.complete(stats);
                 } else {
                     future.completeExceptionally(
@@ -226,7 +228,7 @@ public final class StatsCache {
     // HTTP fetch + JSON parse
     // -------------------------------------------------------------------------
 
-    private CompletableFuture<PlayerStats> fetchFromApi(String uuidKey) {
+    private CompletableFuture<PlayerStats> fetchFromApi(UUID uuidKey) {
         final URI uri;
         try {
             uri = new URI("https", "flowpvp.gg", "/api/ranked/" + uuidKey, null);
@@ -242,7 +244,7 @@ public final class StatsCache {
                 .timeout(Duration.ofSeconds(10))
                 .build();
 
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        return this.httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(response -> {
                     if (response.statusCode() == 404) {
                         throw new RuntimeException("Player not found on FlowPvP: " + uuidKey);
@@ -261,15 +263,15 @@ public final class StatsCache {
     private CompletableFuture<String> resolveUuid(String username) {
         String fromTabList = lookupUuidFromTabList(username);
         if (fromTabList != null) {
-            mojangUuidCache.put(username.toLowerCase(), fromTabList);
+            this.mojangUuidCache.put(username.toLowerCase(), fromTabList);
             return CompletableFuture.completedFuture(fromTabList);
         }
 
-        return pendingUuidLookup.computeIfAbsent(username.toLowerCase(), k ->
+        return this.pendingUuidLookup.computeIfAbsent(username.toLowerCase(), k ->
                 fetchUuidFromMojang(username)
                         .whenComplete((uuid, ex) -> {
-                            pendingUuidLookup.remove(k);
-                            if (uuid != null) mojangUuidCache.put(k, uuid);
+                            this.pendingUuidLookup.remove(k);
+                            if (uuid != null) this.mojangUuidCache.put(k, uuid);
                         })
         );
     }
@@ -286,7 +288,7 @@ public final class StatsCache {
             //?} else {
             if (entry.getProfile().getName().equalsIgnoreCase(username)) {
                 return entry.getProfile().getId().toString();
-            //?}
+                //?}
             }
         }
         return null;
@@ -309,7 +311,7 @@ public final class StatsCache {
                 .timeout(Duration.ofSeconds(10))
                 .build();
 
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        return this.httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(response -> {
                     if (response.statusCode() == 404) {
                         throw new RuntimeException("Player not found: " + username);
@@ -326,25 +328,26 @@ public final class StatsCache {
     private static PlayerStats parseApiResponse(String json) {
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
 
-        String uuid     = root.get("_id").getAsString();
-        String name     = root.get("lastKnownName").getAsString();
-        int globalElo   = root.get("globalElo").getAsInt();
-        int globalPos   = root.has("globalPosition") ? root.get("globalPosition").getAsInt() : -1;
+        String uuid = root.get("_id").getAsString();
+        String name = root.get("lastKnownName").getAsString();
+        int globalElo = root.get("globalElo").getAsInt();
+        int globalPos = root.has("globalPosition") ? root.get("globalPosition").getAsInt() : -1;
 
-        Map<String, PlayerStats.LadderStats> perLadder = new HashMap<>();
+        Map<RankedLadder, PlayerStats.LadderStats> perLadder = new HashMap<>();
         if (root.has("perLadder")) {
             for (Map.Entry<String, JsonElement> entry
                     : root.getAsJsonObject("perLadder").entrySet()) {
                 JsonObject ls = entry.getValue().getAsJsonObject();
-                perLadder.put(entry.getKey(), new PlayerStats.LadderStats(
-                        ls.get("totalRating").getAsInt(),
-                        ls.get("wins").getAsInt(),
-                        ls.get("losses").getAsInt(),
-                        ls.get("currentStreak").getAsInt(),
-                        ls.has("placementMatchesPlayed")
-                                ? ls.get("placementMatchesPlayed").getAsInt() : 0,
-                        ls.get("position").getAsInt()
-                ));
+                perLadder.put(RankedLadder.valueOf(entry.getKey().toUpperCase()),
+                        new PlayerStats.LadderStats(
+                                ls.get("totalRating").getAsInt(),
+                                ls.get("wins").getAsInt(),
+                                ls.get("losses").getAsInt(),
+                                ls.get("currentStreak").getAsInt(),
+                                ls.has("placementMatchesPlayed")
+                                        ? ls.get("placementMatchesPlayed").getAsInt() : 0,
+                                ls.get("position").getAsInt()
+                        ));
             }
         }
 
@@ -352,23 +355,15 @@ public final class StatsCache {
                 System.currentTimeMillis());
     }
 
-    // -------------------------------------------------------------------------
-    // Utilities
-    // -------------------------------------------------------------------------
-
-    /** Converts a UUID to the lowercase dashed string used as cache key. */
-    private static String toKey(UUID uuid) {
-        return uuid.toString().toLowerCase();
-    }
 
     /** Inserts hyphens into a raw 32-char UUID string if they are missing. */
     private static String addDashes(String raw) {
         if (raw.contains("-")) return raw.toLowerCase();
         return (raw.substring(0, 8) + "-"
-              + raw.substring(8, 12)  + "-"
-              + raw.substring(12, 16) + "-"
-              + raw.substring(16, 20) + "-"
-              + raw.substring(20)).toLowerCase();
+                + raw.substring(8, 12) + "-"
+                + raw.substring(12, 16) + "-"
+                + raw.substring(16, 20) + "-"
+                + raw.substring(20)).toLowerCase();
     }
 
     /** Minecraft username validation: 3–16 chars, a-z A-Z 0-9 underscore only. */

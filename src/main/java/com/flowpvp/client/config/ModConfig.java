@@ -1,5 +1,6 @@
 package com.flowpvp.client.config;
 
+import com.flowpvp.client.data.RankedLadder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
@@ -28,7 +29,7 @@ public final class ModConfig {
      * Valid values: GLOBAL, SWORD, AXE, UHC, VANILLA, MACE, DIAMOND_POT,
      *               NETHERITE_OP, SMP, DIAMOND_SMP
      */
-    public String displayMode = "GLOBAL";
+    public RankedLadder displayMode = RankedLadder.GLOBAL;
 
     // ---- HUD ----------------------------------------------------------------
 
@@ -86,49 +87,50 @@ public final class ModConfig {
 
     // ---- Static helpers -----------------------------------------------------
 
-    public static final String[] DISPLAY_MODES = {
-        "GLOBAL", "SWORD", "AXE", "UHC", "VANILLA",
-        "MACE", "DIAMOND_POT", "NETHERITE_OP", "SMP", "DIAMOND_SMP"
+    public static final RankedLadder[] DISPLAY_MODES = {
+            RankedLadder.GLOBAL, RankedLadder.SWORD, RankedLadder.AXE, RankedLadder.UHC, RankedLadder.VANILLA,
+            RankedLadder.MACE, RankedLadder.DIAMOND_POT, RankedLadder.NETHERITE_OP, RankedLadder.SMP,
+            RankedLadder.DIAMOND_SMP
     };
 
-    private static final Map<String, String> MODE_LABELS = Map.of(
-        "GLOBAL",       "Global",
-        "SWORD",        "Sword",
-        "AXE",          "Axe",
-        "UHC",          "UHC",
-        "VANILLA",      "Vanilla",
-        "MACE",         "Mace",
-        "DIAMOND_POT",  "Diamond Pot",
-        "NETHERITE_OP", "Netherite OP",
-        "SMP",          "SMP",
-        "DIAMOND_SMP",  "Diamond SMP"
+    private static final Map<RankedLadder, String> MODE_LABELS = Map.of(
+            RankedLadder.GLOBAL, "Global",
+            RankedLadder.SWORD, "Sword",
+            RankedLadder.AXE, "Axe",
+            RankedLadder.UHC, "UHC",
+            RankedLadder.VANILLA, "Vanilla",
+            RankedLadder.MACE, "Mace",
+            RankedLadder.DIAMOND_POT, "Diamond Pot",
+            RankedLadder.NETHERITE_OP, "Netherite OP",
+            RankedLadder.SMP, "SMP",
+            RankedLadder.DIAMOND_SMP, "Diamond SMP"
     );
 
     /** Human-readable label for a display mode key. */
-    public static String displayModeLabel(String mode) {
-        return MODE_LABELS.getOrDefault(mode, mode);
+    public static String displayModeLabel(RankedLadder mode) {
+        return MODE_LABELS.getOrDefault(mode, mode.name().toLowerCase());
     }
 
     /** Advance to the next display mode (wraps around). */
     public void cycleDisplayMode() {
         for (int i = 0; i < DISPLAY_MODES.length; i++) {
-            if (DISPLAY_MODES[i].equals(displayMode)) {
-                displayMode = DISPLAY_MODES[(i + 1) % DISPLAY_MODES.length];
+            if (DISPLAY_MODES[i].equals(this.displayMode)) {
+                this.displayMode = DISPLAY_MODES[(i + 1) % DISPLAY_MODES.length];
                 return;
             }
         }
-        displayMode = DISPLAY_MODES[0];
+        this.displayMode = DISPLAY_MODES[0];
     }
 
     /** Go back to the previous display mode (wraps around). */
     public void cycleDisplayModeBack() {
         for (int i = 0; i < DISPLAY_MODES.length; i++) {
-            if (DISPLAY_MODES[i].equals(displayMode)) {
-                displayMode = DISPLAY_MODES[(i - 1 + DISPLAY_MODES.length) % DISPLAY_MODES.length];
+            if (DISPLAY_MODES[i].equals(this.displayMode)) {
+                this.displayMode = DISPLAY_MODES[(i - 1 + DISPLAY_MODES.length) % DISPLAY_MODES.length];
                 return;
             }
         }
-        displayMode = DISPLAY_MODES[0];
+        this.displayMode = DISPLAY_MODES[0];
     }
 
     // ---- Load / Save --------------------------------------------------------

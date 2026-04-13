@@ -3,6 +3,7 @@ package com.flowpvp.mixin;
 import com.flowpvp.client.FlowPvPClient;
 import com.flowpvp.client.config.ModConfig;
 import com.flowpvp.client.data.PlayerStats;
+import com.flowpvp.client.data.RankedLadder;
 import com.flowpvp.client.data.TierInfo;
 import net.minecraft.client.gui.hud.PlayerListHud;
 import net.minecraft.client.network.PlayerListEntry;
@@ -44,7 +45,7 @@ public class PlayerListHudMixin {
             return;
         }
 
-        String mode   = ModConfig.INSTANCE.displayMode;
+        RankedLadder mode   = ModConfig.INSTANCE.displayMode;
         TierInfo tier = stats.getDisplayTier(mode);
         int elo       = stats.getDisplayElo(mode);
 
