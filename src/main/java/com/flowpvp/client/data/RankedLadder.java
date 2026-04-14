@@ -2,6 +2,7 @@ package com.flowpvp.client.data;
 
 public enum RankedLadder {
     GLOBAL("Global"),
+    HIGHEST_TIER("Highest"),
     SWORD("Sword"),
     AXE("Axe"),
     UHC("UHC"),

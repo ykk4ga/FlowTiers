@@ -142,7 +142,7 @@ public final class HudConfigScreen extends Screen {
 
         // Mode breadcrumb (all modes listed below the mode button)
         ctx.drawCenteredTextWithShadow(textRenderer,
-                "Global \u00BB Sword \u00BB Axe \u00BB UHC \u00BB Vanilla \u00BB Mace \u00BB Diamond Pot \u00BB Netherite OP \u00BB SMP \u00BB Diamond SMP",
+                "Global \u00BB Highest Tier \u00BB Sword \u00BB Axe \u00BB UHC \u00BB Vanilla \u00BB Mace \u00BB Diamond Pot \u00BB Netherite OP \u00BB SMP \u00BB Diamond SMP",
                 cx, row1Y + 28, 0xFF555555);
 
         super.render(ctx, mouseX, mouseY, delta);
@@ -225,7 +225,7 @@ public final class HudConfigScreen extends Screen {
 
     private boolean isOverWidget(int mx, int my) {
         return mx >= widgetX && mx <= widgetX + widgetW
-            && my >= widgetY && my <= widgetY + widgetH;
+                && my >= widgetY && my <= widgetY + widgetH;
     }
 
     private static int clamp(int val, int min, int max) {

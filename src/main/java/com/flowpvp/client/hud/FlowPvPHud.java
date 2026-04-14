@@ -75,10 +75,10 @@ public final class FlowPvPHud {
     }
 
     private void drawStats(DrawContext ctx, TextRenderer tr, int x, int y) {
-        ModConfig cfg       = ModConfig.INSTANCE;
-        PlayerStats stats   = cachedStats;
-        RankedLadder mode         = cfg.displayMode;
-        NumberFormat fmt    = NumberFormat.getNumberInstance(Locale.US);
+        ModConfig cfg     = ModConfig.INSTANCE;
+        PlayerStats stats = cachedStats;
+        RankedLadder mode = cfg.displayMode;
+        NumberFormat fmt  = NumberFormat.getNumberInstance(Locale.US);
 
         TierInfo tier = stats.getDisplayTier(mode);
         int elo       = stats.getDisplayElo(mode);
@@ -86,13 +86,22 @@ public final class FlowPvPHud {
         int wins      = stats.getDisplayWins(mode);
         int losses    = stats.getDisplayLosses(mode);
         int streak    = stats.getDisplayStreak(mode);
-        boolean perLadder = !"GLOBAL".equals(mode);
 
-        // ---- Compute line content ----
-        String headerLine = "GLOBAL".equals(mode)
-                ? "FlowTiers"
-                : "FlowTiers  [" + ModConfig.displayModeLabel(mode) + "]";
+        boolean perLadder = mode != RankedLadder.GLOBAL;
 
+        // ---- Compute header line ----
+        String headerLine;
+        if (mode == RankedLadder.GLOBAL) {
+            headerLine = "FlowTiers";
+        } else if (mode == RankedLadder.HIGHEST_TIER) {
+            // Show which ladder was auto-selected as the best
+            RankedLadder best = stats.getHighestTierLadder();
+            headerLine = "FlowTiers  [" + ModConfig.displayModeLabel(best) + " \u2605]";
+        } else {
+            headerLine = "FlowTiers  [" + ModConfig.displayModeLabel(mode) + "]";
+        }
+
+        // ---- Compute optional lines ----
         String tierEloLine = buildTierEloLine(cfg, tier, elo);
 
         String posLine = (cfg.hudShowPosition && pos > 0)
@@ -101,9 +110,9 @@ public final class FlowPvPHud {
 
         String wlLine = (cfg.hudShowWinLoss && perLadder)
                 ? wins + "W  " + losses + "L"
-                  + (wins + losses > 0
-                     ? "  (" + String.format("%.0f%%", (double) wins / (wins + losses) * 100) + ")"
-                     : "")
+                + (wins + losses > 0
+                ? "  (" + String.format("%.0f%%", (double) wins / (wins + losses) * 100) + ")"
+                : "")
                 : null;
 
         String streakLine = (cfg.hudShowStreak && perLadder)
@@ -113,9 +122,9 @@ public final class FlowPvPHud {
         // ---- Measure background ----
         int maxW = tr.getWidth(headerLine);
         if (tierEloLine != null) maxW = Math.max(maxW, tr.getWidth(tierEloLine));
-        if (posLine    != null) maxW = Math.max(maxW, tr.getWidth(posLine));
-        if (wlLine     != null) maxW = Math.max(maxW, tr.getWidth(wlLine));
-        if (streakLine != null) maxW = Math.max(maxW, tr.getWidth(streakLine));
+        if (posLine     != null) maxW = Math.max(maxW, tr.getWidth(posLine));
+        if (wlLine      != null) maxW = Math.max(maxW, tr.getWidth(wlLine));
+        if (streakLine  != null) maxW = Math.max(maxW, tr.getWidth(streakLine));
 
         int lines = 1 // header
                 + (tierEloLine != null ? 1 : 0)
@@ -123,16 +132,17 @@ public final class FlowPvPHud {
                 + (wlLine      != null ? 1 : 0)
                 + (streakLine  != null ? 1 : 0);
 
+        // ---- Draw background ----
         ctx.fill(x, y, x + maxW + PADDING * 2, y + lines * LINE_HEIGHT + PADDING * 2, BG_COLOR);
 
         int tx = x + PADDING;
         int ty = y + PADDING;
 
-        // Header
+        //  Header
         ctx.drawText(tr, headerLine, tx, ty, FLOW_COLOR, true);
         ty += LINE_HEIGHT;
 
-        // Tier + ELO (rendered in two colors on the same line)
+        // Tier + ELO on the same line
         if (cfg.hudShowTierName || cfg.hudShowElo) {
             int cx = tx;
             if (cfg.hudShowTierName) {
@@ -200,7 +210,7 @@ public final class FlowPvPHud {
         if (cachedStats == null) return 130;
         RankedLadder mode = ModConfig.INSTANCE.displayMode;
         String tierElo = cachedStats.getDisplayTier(mode).displayName
-                       + "  " + cachedStats.getDisplayElo(mode) + " ELO";
+                + "  " + cachedStats.getDisplayElo(mode) + " ELO";
         return Math.max(tr.getWidth("FlowTiers"), tr.getWidth(tierElo)) + PADDING * 2;
     }
 

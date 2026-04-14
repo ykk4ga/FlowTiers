@@ -1,6 +1,7 @@
 package com.flowpvp.client.data;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Map;
 
 /**
@@ -42,6 +43,7 @@ public final class PlayerStats {
 
     /** ELO for the given display mode ("GLOBAL" or a ladder key). */
     public int getDisplayElo(RankedLadder mode) {
+        if (mode == RankedLadder.HIGHEST_TIER) return getDisplayElo(getHighestTierLadder());
         if (mode == RankedLadder.GLOBAL) return globalElo;
         LadderStats ls = perLadder.get(mode);
         return ls != null ? ls.totalRating : 800;
@@ -49,6 +51,7 @@ public final class PlayerStats {
 
     /** Leaderboard position for the given display mode (-1 if unavailable). */
     public int getDisplayPosition(RankedLadder mode) {
+        if (mode == RankedLadder.HIGHEST_TIER) return getDisplayPosition(getHighestTierLadder());
         if (mode == RankedLadder.GLOBAL) return globalPosition;
         LadderStats ls = perLadder.get(mode);
         return ls != null ? ls.position : -1;
@@ -56,11 +59,12 @@ public final class PlayerStats {
 
     /** Tier derived from the ELO for the given display mode. */
     public TierInfo getDisplayTier(RankedLadder mode) {
+        if (mode == RankedLadder.HIGHEST_TIER) return getDisplayTier(getHighestTierLadder());
         return TierInfo.fromElo(getDisplayElo(mode));
     }
-
     /** Wins for the given display mode (0 for GLOBAL). */
     public int getDisplayWins(RankedLadder mode) {
+        if (mode == RankedLadder.HIGHEST_TIER) return getDisplayWins(getHighestTierLadder());
         if (mode == RankedLadder.GLOBAL) return 0;
         LadderStats ls = perLadder.get(mode);
         return ls != null ? ls.wins : 0;
@@ -68,6 +72,7 @@ public final class PlayerStats {
 
     /** Losses for the given display mode (0 for GLOBAL). */
     public int getDisplayLosses(RankedLadder mode) {
+        if (mode == RankedLadder.HIGHEST_TIER) return getDisplayLosses(getHighestTierLadder());
         if (mode == RankedLadder.GLOBAL) return 0;
         LadderStats ls = perLadder.get(mode);
         return ls != null ? ls.losses : 0;
@@ -75,6 +80,7 @@ public final class PlayerStats {
 
     /** Current streak for the given display mode (0 for GLOBAL). Negative = losing streak. */
     public int getDisplayStreak(RankedLadder mode) {
+        if (mode == RankedLadder.HIGHEST_TIER) return getDisplayStreak(getHighestTierLadder());
         if (mode == RankedLadder.GLOBAL) return 0;
         LadderStats ls = perLadder.get(mode);
         return ls != null ? ls.currentStreak : 0;
@@ -85,6 +91,17 @@ public final class PlayerStats {
         if (mode == RankedLadder.GLOBAL) return 0;
         LadderStats ls = perLadder.get(mode);
         return ls != null ? ls.placementMatchesPlayed : 0;
+    }
+
+    /**
+     * Returns the ladder with the highest ELO among all ladder entries.
+     * Falls back to GLOBAL if Ladder is empty.
+     */
+    public RankedLadder getHighestTierLadder() {
+        return perLadder.entrySet().stream()
+                .max(Comparator.comparingInt(e -> e.getValue().totalRating))
+                .map(Map.Entry::getKey)
+                .orElse(RankedLadder.GLOBAL);
     }
 
     // -------------------------------------------------------------------------
