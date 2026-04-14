@@ -25,7 +25,8 @@ public class PlayerListHudMixin {
      * their name in the tab list.
      *
      * Uses the UUID from the game profile — no Mojang API call needed.
-     * If stats aren't cached yet, schedules a background fetch for next render.
+     * Triggers an immediate (deduplicated) async fetch so stats are ready
+     * the next time this method is called, even if getPlayerName is cached.
      */
     @Inject(method = "getPlayerName", at = @At("RETURN"), cancellable = true)
     private void flowpvp$appendTier(PlayerListEntry entry,
@@ -41,13 +42,16 @@ public class PlayerListHudMixin {
 
         PlayerStats stats = FlowPvPClient.STATS_CACHE.getCachedByUuid(uuid);
         if (stats == null) {
-            FlowPvPClient.STATS_CACHE.scheduleStatsByUuid(uuid);
+            // Immediate async fetch (deduplicated — safe to call every frame).
+            // When the future resolves, the cache is populated and the next
+            // call here will find the stats and show the tier.
+            FlowPvPClient.STATS_CACHE.getStatsByUuid(uuid);
             return;
         }
 
-        RankedLadder mode   = ModConfig.INSTANCE.displayMode;
-        TierInfo tier = stats.getDisplayTier(mode);
-        int elo       = stats.getDisplayElo(mode);
+        RankedLadder mode = ModConfig.INSTANCE.displayMode;
+        TierInfo tier     = stats.getDisplayTier(mode);
+        int elo           = stats.getDisplayElo(mode);
 
         MutableText modified = cir.getReturnValue().copy()
                 .append(Text.literal(" "))

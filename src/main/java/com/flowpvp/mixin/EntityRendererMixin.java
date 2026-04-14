@@ -9,6 +9,9 @@ import net.minecraft.client.render.VertexConsumerProvider;
 //? if >=1.21.2 {
 import net.minecraft.client.render.entity.state.EntityRenderState;
 //?}
+//? if >=1.21.9 {
+/*import net.minecraft.client.render.entity.state.PlayerEntityRenderState;*/
+//?}
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -31,19 +34,12 @@ public abstract class EntityRendererMixin {
     // Shadows — version-specific (only one block is active at a time)
     // =========================================================================
 
-    //? if >=1.21.9 {
-    /*@Shadow
-    protected abstract void renderLabelIfPresent(
-            EntityRenderState state,
-            MatrixStack matrices,
-            net.minecraft.client.render.command.OrderedRenderCommandQueue renderQueue,
-            net.minecraft.client.render.state.CameraRenderState cameraRenderState);*/
-    //?} else if >=1.21.2 {
+    //? if >=1.21.2 && <1.21.9 {
     @Shadow
     protected abstract void renderLabelIfPresent(
             EntityRenderState state, Text text,
             MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light);
-    //?} else {
+    //?} else if <1.21.2 {
     /*@Shadow
     protected abstract void renderLabelIfPresent(
             Entity entity, Text text,
@@ -64,51 +60,27 @@ public abstract class EntityRendererMixin {
                  "Lnet/minecraft/client/render/entity/state/EntityRenderState;F)V",
         at = @At("RETURN")
     )
-    private void flowpvp$scheduleFetch(Entity entity, EntityRenderState state,
-                                        float tickDelta, CallbackInfo ci) {
+    private void flowpvp$modifyNametag19(Entity entity, EntityRenderState state,
+                                          float tickDelta, CallbackInfo ci) {
         if (!ModConfig.INSTANCE.showTierAboveHead) return;
         if (!(entity instanceof PlayerEntity player)) return;
+        // nameLabelPos is null when the nametag is not being rendered
+        if (state.nameLabelPos == null) return;
+
         UUID uuid = player.getUuid();
-        if (FlowPvPClient.STATS_CACHE.getCachedByUuid(uuid) == null) {
+        PlayerStats stats = FlowPvPClient.STATS_CACHE.getCachedByUuid(uuid);
+        if (stats == null) {
             FlowPvPClient.STATS_CACHE.scheduleStatsByUuid(uuid);
+            return;
         }
-    }
 
-    @Inject(
-        method = "renderLabelIfPresent(" +
-                 "Lnet/minecraft/client/render/entity/state/EntityRenderState;" +
-                 "Lnet/minecraft/client/util/math/MatrixStack;" +
-                 "Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;" +
-                 "Lnet/minecraft/client/render/state/CameraRenderState;)V",
-        at = @At("HEAD")
-    )
-    private void flowpvp$renderTierLine(EntityRenderState state,
-                                         MatrixStack matrices,
-                                         net.minecraft.client.render.command.OrderedRenderCommandQueue renderQueue,
-                                         net.minecraft.client.render.state.CameraRenderState cameraRenderState,
-                                         CallbackInfo ci) {
-        if (RENDERING_TIER.get()) return;
-        if (!ModConfig.INSTANCE.showTierAboveHead) return;
-        if (state.displayName == null) return;
-
-        String username = state.displayName.getString();
-        if (!isValidUsername(username)) return;
-
-        PlayerStats stats = FlowPvPClient.STATS_CACHE.getCachedByUsername(username);
-        if (stats == null) return;
-
+        // Append tier text next to the player name. vanilla renders displayName automatically.
         Text tierText = buildTierText(stats);
-
-        net.minecraft.util.math.Vec3d labelPos = state.nameLabelPos;
-        if (labelPos == null) return;
-        net.minecraft.util.math.Vec3d offsetPos = labelPos.add(0.0, 0.27, 0.0);
-
-        RENDERING_TIER.set(true);
-        try {
-            renderQueue.submitLabel(matrices, offsetPos, state.light, tierText,
-                    false, 0x26000000, state.squaredDistanceToCamera, cameraRenderState);
-        } finally {
-            RENDERING_TIER.set(false);
+        if (state.displayName != null) {
+            state.displayName = net.minecraft.text.Text.empty()
+                    .append(state.displayName)
+                    .append(net.minecraft.text.Text.literal("  "))
+                    .append(tierText);
         }
     }*/
     //?}
@@ -140,7 +112,7 @@ public abstract class EntityRendererMixin {
                  "Lnet/minecraft/text/Text;" +
                  "Lnet/minecraft/client/util/math/MatrixStack;" +
                  "Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
-        at = @At("HEAD")
+        at = @At("TAIL")
     )
     private void flowpvp$renderTierLine(EntityRenderState state, Text text,
                                          MatrixStack matrices,
@@ -159,7 +131,7 @@ public abstract class EntityRendererMixin {
         Text tierText = buildTierText(stats);
 
         matrices.push();
-        matrices.translate(0.0, 0.27, 0.0);
+        matrices.translate(0.0, 1.5, 0.0);
         RENDERING_TIER.set(true);
         try {
             this.renderLabelIfPresent(state, tierText, matrices, vertexConsumers, light);

@@ -4,7 +4,7 @@ import com.flowpvp.client.FlowPvPClient;
 import com.flowpvp.client.data.PlayerStats;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.network.PlayerListEntry;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,10 +28,10 @@ public class PlayerStatsScanner {
 
         long now = System.currentTimeMillis();
 
+        // --- Visible world players (immediate fetch, shows in nametags) ---
         for (AbstractClientPlayerEntity player : mc.world.getPlayers()) {
             UUID uuid = player.getUuid();
 
-            // Skip if recently fetched
             if (LAST_FETCH.containsKey(uuid) &&
                 now - LAST_FETCH.get(uuid) < FETCH_COOLDOWN_MS) {
                 continue;
@@ -39,24 +39,33 @@ public class PlayerStatsScanner {
 
             LAST_FETCH.put(uuid, now);
 
-            // Fetch stats silently
             FlowPvPClient.STATS_CACHE.getStatsByUuid(uuid)
                 .thenAcceptAsync(stats -> {
-                    mc.execute(() -> {
-                        CACHE.put(uuid, stats);
-
-                        // OPTIONAL DEBUG:
-                        // System.out.println("Fetched stats for " + stats.lastKnownName);
-                    });
+                    mc.execute(() -> CACHE.put(uuid, stats));
                 })
-                .exceptionally(ex -> {
-                    System.err.println("Failed to fetch stats for " + player.getName().getString());
-                    return null;
-                });
+                .exceptionally(ex -> null);
+        }
+
+        // --- All server players (scheduled fetch, populates tab list) ---
+        if (mc.getNetworkHandler() == null) return;
+        for (PlayerListEntry entry : mc.getNetworkHandler().getPlayerList()) {
+            //? if >=1.21.9 {
+            /*UUID listUuid = entry.getProfile().id();*/
+            //?} else {
+            UUID listUuid = entry.getProfile().getId();
+            //?}
+            if (listUuid == null) continue;
+
+            if (LAST_FETCH.containsKey(listUuid) &&
+                now - LAST_FETCH.get(listUuid) < FETCH_COOLDOWN_MS) {
+                continue;
+            }
+
+            LAST_FETCH.put(listUuid, now);
+            FlowPvPClient.STATS_CACHE.scheduleStatsByUuid(listUuid);
         }
     }
 
-    // Getter so you can use this anywhere else in your mod
     public static PlayerStats get(UUID uuid) {
         return CACHE.get(uuid);
     }
