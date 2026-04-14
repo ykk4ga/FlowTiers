@@ -140,11 +140,6 @@ public final class HudConfigScreen extends Screen {
         ctx.drawCenteredTextWithShadow(textRenderer, "Nametag Tier",
                 cx + 62 + 50, row2Y - 12, HINT_COLOR);
 
-        // Mode breadcrumb (all modes listed below the mode button)
-        ctx.drawCenteredTextWithShadow(textRenderer,
-                "Global \u00BB Highest Tier \u00BB Sword \u00BB Axe \u00BB UHC \u00BB Vanilla \u00BB Mace \u00BB Diamond Pot \u00BB Netherite OP \u00BB SMP \u00BB Diamond SMP",
-                cx, row1Y + 28, 0xFF555555);
-
         super.render(ctx, mouseX, mouseY, delta);
     }
 
