@@ -206,7 +206,13 @@ public abstract class EntityRendererMixin {
                     }
                     break;
                 case GAMEMODE:
-                    if (mode != RankedLadder.GLOBAL) {
+                    if (mode == RankedLadder.HIGHEST_TIER) {
+                        // Resolve which ladder actually has the highest ELO and show it with a star
+                        RankedLadder best = stats.getHighestTierLadder();
+                        segment = net.minecraft.text.Text.literal(
+                                "[" + ModConfig.displayModeLabel(best) + " \u2605]")
+                                .setStyle(Style.EMPTY.withColor(0xAAAAAA));
+                    } else if (mode != RankedLadder.GLOBAL) {
                         segment = net.minecraft.text.Text.literal(
                                 "[" + ModConfig.displayModeLabel(mode) + "]")
                                 .setStyle(Style.EMPTY.withColor(0xAAAAAA));

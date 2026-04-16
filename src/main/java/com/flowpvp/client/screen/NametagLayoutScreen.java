@@ -223,12 +223,20 @@ public class NametagLayoutScreen extends Screen {
                             .setStyle(Style.EMPTY.withColor(0xFFD700));
                     break;
                 case GAMEMODE:
-                    // Always show a gamemode label in the preview so users can see it
-                    String modeLabel = mode == RankedLadder.GLOBAL
-                            ? "Global"
-                            : ModConfig.displayModeLabel(mode);
-                    segment = net.minecraft.text.Text.literal("[" + modeLabel + "]")
-                            .setStyle(Style.EMPTY.withColor(0xAAAAAA));
+                    if (mode == RankedLadder.HIGHEST_TIER) {
+                        // Mirror real behaviour: show the resolved best ladder with a star
+                        segment = net.minecraft.text.Text.literal("[Sword \u2605]")
+                                .setStyle(Style.EMPTY.withColor(0xAAAAAA));
+                    } else if (mode == RankedLadder.GLOBAL) {
+                        // GLOBAL never shows a gamemode label — show a dim placeholder so the
+                        // component is still visible in the preview
+                        segment = net.minecraft.text.Text.literal("[Global]")
+                                .setStyle(Style.EMPTY.withColor(0x444444));
+                    } else {
+                        segment = net.minecraft.text.Text.literal(
+                                "[" + ModConfig.displayModeLabel(mode) + "]")
+                                .setStyle(Style.EMPTY.withColor(0xAAAAAA));
+                    }
                     break;
             }
 
