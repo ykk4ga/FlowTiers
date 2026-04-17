@@ -5,6 +5,7 @@ import com.flowpvp.client.config.ModConfig;
 import com.flowpvp.client.data.PlayerStats;
 import com.flowpvp.client.data.RankedLadder;
 import com.flowpvp.client.data.TierInfo;
+import com.flowpvp.client.feature.UpdateChecker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -33,6 +34,7 @@ public final class FlowPvPHud {
     private static final int GRAY        = 0xFFAAAAAA;
     private static final int GREEN       = 0xFF55FF55;
     private static final int RED         = 0xFFFF5555;
+    private static final int UPDATE_COLOR = 0xFFFFAA00; // amber — update available
 
     private volatile PlayerStats cachedStats  = null;
     private volatile CompletableFuture<PlayerStats> pendingFetch = null;
@@ -121,18 +123,25 @@ public final class FlowPvPHud {
                 ? buildStreakLine(streak)
                 : null;
 
+        // ---- Update-available line ----
+        String updateLine = UpdateChecker.updateAvailable
+                ? "\u2B06 v" + UpdateChecker.latestVersion + " available"
+                : null;
+
         // ---- Measure background ----
         int maxW = tr.getWidth(headerLine);
         if (tierEloLine != null) maxW = Math.max(maxW, tr.getWidth(tierEloLine));
         if (posLine    != null) maxW = Math.max(maxW, tr.getWidth(posLine));
         if (wlLine     != null) maxW = Math.max(maxW, tr.getWidth(wlLine));
         if (streakLine != null) maxW = Math.max(maxW, tr.getWidth(streakLine));
+        if (updateLine != null) maxW = Math.max(maxW, tr.getWidth(updateLine));
 
         int lines = 1 // header
                 + (tierEloLine != null ? 1 : 0)
                 + (posLine     != null ? 1 : 0)
                 + (wlLine      != null ? 1 : 0)
-                + (streakLine  != null ? 1 : 0);
+                + (streakLine  != null ? 1 : 0)
+                + (updateLine  != null ? 1 : 0);
 
         ctx.fill(x, y, x + maxW + PADDING * 2, y + lines * LINE_HEIGHT + PADDING * 2, BG_COLOR);
 
@@ -169,6 +178,12 @@ public final class FlowPvPHud {
         if (streakLine != null) {
             int streakColor = streak > 0 ? GREEN : streak < 0 ? RED : GRAY;
             ctx.drawText(tr, streakLine, tx, ty, streakColor, true);
+            ty += LINE_HEIGHT;
+        }
+
+        // Update notification at the bottom of the widget
+        if (updateLine != null) {
+            ctx.drawText(tr, updateLine, tx, ty, UPDATE_COLOR, true);
         }
     }
 
@@ -223,6 +238,7 @@ public final class FlowPvPHud {
         if (cfg.hudShowPosition) lines++;
         if (cfg.hudShowWinLoss && perLadder) lines++;
         if (cfg.hudShowStreak && perLadder) lines++;
+        if (UpdateChecker.updateAvailable) lines++;
         return lines * LINE_HEIGHT + PADDING * 2;
     }
 }
