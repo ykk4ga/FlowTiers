@@ -18,9 +18,10 @@ import java.util.Locale;
 
 public class NametagLayoutScreen extends Screen {
 
-    private static final int COL_HEADER_COLOR = 0xFF888888;
+    private static final int BG_COLOR         = 0xE6101010;   // near-solid, no blur
+    private static final int COL_HEADER_COLOR = 0xFFAAAAAA;
     private static final int COL_NAME_ON      = 0xFFFFFFFF;
-    private static final int COL_NAME_OFF     = 0xFF555555;
+    private static final int COL_NAME_OFF     = 0xFF777777;
     private static final int ROW_H            = 24;
 
     private final Screen parent;
@@ -48,7 +49,6 @@ public class NametagLayoutScreen extends Screen {
             NametagComponentConfig comp = layout.get(i);
             int y = startY + i * ROW_H;
 
-            // Up button (not shown for first row)
             if (i > 0) {
                 addDrawableChild(ButtonWidget.builder(Text.literal("\u2191"), btn -> {
                     swap(idx - 1, idx);
@@ -56,7 +56,6 @@ public class NametagLayoutScreen extends Screen {
                 }).dimensions(startX + 92, y, 20, 20).build());
             }
 
-            // Down button (not shown for last row)
             if (i < layout.size() - 1) {
                 addDrawableChild(ButtonWidget.builder(Text.literal("\u2193"), btn -> {
                     swap(idx, idx + 1);
@@ -64,14 +63,12 @@ public class NametagLayoutScreen extends Screen {
                 }).dimensions(startX + 114, y, 20, 20).build());
             }
 
-            // Enable toggle
             final NametagComponentConfig compRef = comp;
             addDrawableChild(ButtonWidget.builder(enableLabel(comp), btn -> {
                 compRef.enabled = !compRef.enabled;
                 btn.setMessage(enableLabel(compRef));
             }).dimensions(startX + 138, y, 52, 20).build());
 
-            // Label toggle (ELO and POSITION only)
             if (comp.type == NametagComponent.ELO || comp.type == NametagComponent.POSITION) {
                 addDrawableChild(ButtonWidget.builder(labelBtnText(comp), btn -> {
                     compRef.showLabel = !compRef.showLabel;
@@ -80,9 +77,24 @@ public class NametagLayoutScreen extends Screen {
             }
         }
 
-        // Done button
         addDrawableChild(ButtonWidget.builder(Text.literal("Done"), btn -> close())
                 .dimensions(width / 2 - 50, height - 28, 100, 20).build());
+    }
+
+    // -------------------------------------------------------------------------
+    // Background override — force a near-solid dark background so the text is
+    // readable. The default Minecraft Screen background applies a blur on top
+    // of anything we draw, which was making the layout menu look "blurred".
+    // -------------------------------------------------------------------------
+
+    @Override
+    public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        ctx.fill(0, 0, width, height, BG_COLOR);
+    }
+
+    @Override
+    public void renderInGameBackground(DrawContext ctx) {
+        ctx.fill(0, 0, width, height, BG_COLOR);
     }
 
     // -------------------------------------------------------------------------
@@ -91,14 +103,12 @@ public class NametagLayoutScreen extends Screen {
 
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        ctx.fill(0, 0, width, height, 0x99000000);
-
         // Title
         ctx.drawCenteredTextWithShadow(textRenderer,
                 "Nametag Layout", width / 2, 10, 0xFF00BFFF);
         ctx.drawCenteredTextWithShadow(textRenderer,
                 "\u2191\u2193 to reorder  \u2022  toggle Show / Label text",
-                width / 2, 24, 0xFF666666);
+                width / 2, 24, 0xFF888888);
 
         int startX = width / 2 - 145;
         int startY = 62;
@@ -110,26 +120,22 @@ public class NametagLayoutScreen extends Screen {
         ctx.drawTextWithShadow(textRenderer, "Show",       startX + 148,     headerY, COL_HEADER_COLOR);
         ctx.drawTextWithShadow(textRenderer, "Label Text", startX + 198,     headerY, COL_HEADER_COLOR);
 
-        // Separator line under headers
-        ctx.fill(startX - 4, headerY + 10, startX + 300, headerY + 11, 0xFF333333);
+        ctx.fill(startX - 4, headerY + 10, startX + 300, headerY + 11, 0xFF444444);
 
         // Rows
         for (int i = 0; i < layout.size(); i++) {
             NametagComponentConfig comp = layout.get(i);
             int y = startY + i * ROW_H;
 
-            // Alternating row background
             if (i % 2 == 0) {
-                ctx.fill(startX - 4, y - 2, startX + 300, y + 20, 0x11FFFFFF);
+                ctx.fill(startX - 4, y - 2, startX + 300, y + 20, 0x22FFFFFF);
             }
 
-            // Row index
             ctx.drawTextWithShadow(textRenderer,
-                    String.valueOf(i + 1) + ".",
+                    (i + 1) + ".",
                     startX - 14, y + 5,
-                    0xFF555555);
+                    0xFF888888);
 
-            // Component name
             int nameColor = comp.enabled ? COL_NAME_ON : COL_NAME_OFF;
             ctx.drawTextWithShadow(textRenderer,
                     componentName(comp.type),
@@ -139,8 +145,8 @@ public class NametagLayoutScreen extends Screen {
 
         // Preview section
         int previewY = startY + layout.size() * ROW_H + 14;
-        ctx.fill(startX - 4, previewY - 4, startX + 300, previewY + 16, 0x22FFFFFF);
-        ctx.drawTextWithShadow(textRenderer, "Preview:", startX, previewY + 2, 0xFF888888);
+        ctx.fill(startX - 4, previewY - 4, startX + 300, previewY + 16, 0x33FFFFFF);
+        ctx.drawTextWithShadow(textRenderer, "Preview:", startX, previewY + 2, 0xFFAAAAAA);
         Text preview = buildPreview();
         ctx.drawTextWithShadow(textRenderer, preview, startX + 60, previewY + 2, 0xFFFFFFFF);
 
@@ -212,7 +218,7 @@ public class NametagLayoutScreen extends Screen {
                     break;
                 case ELO:
                     segment = net.minecraft.text.Text.literal(
-                            comp.showLabel ? (fakeElo + " ELO") : String.valueOf(fakeElo))
+                                    comp.showLabel ? (fakeElo + " ELO") : String.valueOf(fakeElo))
                             .setStyle(Style.EMPTY.withColor(0xFFFFFF));
                     break;
                 case POSITION:
@@ -224,17 +230,14 @@ public class NametagLayoutScreen extends Screen {
                     break;
                 case GAMEMODE:
                     if (mode == RankedLadder.HIGHEST_TIER) {
-                        // Mirror real behaviour: show the resolved best ladder with a star
                         segment = net.minecraft.text.Text.literal("[Sword \u2605]")
                                 .setStyle(Style.EMPTY.withColor(0xAAAAAA));
                     } else if (mode == RankedLadder.GLOBAL) {
-                        // GLOBAL never shows a gamemode label — show a dim placeholder so the
-                        // component is still visible in the preview
                         segment = net.minecraft.text.Text.literal("[Global]")
-                                .setStyle(Style.EMPTY.withColor(0x444444));
+                                .setStyle(Style.EMPTY.withColor(0x666666));
                     } else {
                         segment = net.minecraft.text.Text.literal(
-                                "[" + ModConfig.displayModeLabel(mode) + "]")
+                                        "[" + ModConfig.displayModeLabel(mode) + "]")
                                 .setStyle(Style.EMPTY.withColor(0xAAAAAA));
                     }
                     break;
@@ -252,7 +255,7 @@ public class NametagLayoutScreen extends Screen {
 
         if (first) {
             return net.minecraft.text.Text.literal("(nothing enabled)")
-                    .setStyle(Style.EMPTY.withColor(0xFF555555));
+                    .setStyle(Style.EMPTY.withColor(0xFF777777));
         }
 
         return out;

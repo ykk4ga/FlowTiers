@@ -38,7 +38,12 @@ public final class ModConfig {
     /** Whether the HUD overlay is visible. */
     public boolean hudEnabled = true;
 
-    /** HUD position on screen (top-left corner). */
+    /**
+     * HUD position on screen. hudX is interpreted relative to hudAlignment:
+     *   LEFT  → distance from the left edge of the screen (default).
+     *   RIGHT → distance from the right edge of the screen.
+     * hudY is always measured from the top of the screen.
+     */
     public int hudX = 5;
     public int hudY = 5;
 
@@ -63,6 +68,12 @@ public final class ModConfig {
     public boolean showTierAboveHead = true;
 
     /**
+     * Whether the tier/ELO label appears to the LEFT or RIGHT of the player
+     * name in nametags and the tab list.
+     */
+    public NametagEloAlignment eloAlignment = NametagEloAlignment.LEFT;
+
+    /**
      * Ordered list of nametag display components.
      * Controls what shows above heads, their order, and label options.
      */
@@ -75,6 +86,17 @@ public final class ModConfig {
 
     /** Show ELO value next to the tier in the tab list. */
     public boolean tabShowElo = false;
+
+    /**
+     * When true, suppress the tab-list tier append inside a FlowPvP ranked
+     * match or duels lobby (detected via scoreboard / tab header keywords and
+     * a per-name numeric-prefix check) so tier/ELO isn't shown twice.
+     *
+     * FlowPvP's ranked tab list already prepends the ELO as a plain number
+     * on the left of each player's name; this toggle keeps our mod from
+     * duplicating that information.
+     */
+    public boolean suppressInRankedMatch = true;
 
     // ---- General ------------------------------------------------------------
 
@@ -91,10 +113,10 @@ public final class ModConfig {
 
     public static List<NametagComponentConfig> defaultNametagLayout() {
         List<NametagComponentConfig> list = new ArrayList<>();
-        list.add(new NametagComponentConfig(NametagComponent.TIER,     true,  false));
-        list.add(new NametagComponentConfig(NametagComponent.ELO,      true,  true));
-        list.add(new NametagComponentConfig(NametagComponent.POSITION,  true,  true));
-        list.add(new NametagComponentConfig(NametagComponent.GAMEMODE,  true,  false));
+        list.add(new NametagComponentConfig(NametagComponent.TIER,     false, false));
+        list.add(new NametagComponentConfig(NametagComponent.ELO,      true,  false));
+        list.add(new NametagComponentConfig(NametagComponent.POSITION,  false, false));
+        list.add(new NametagComponentConfig(NametagComponent.GAMEMODE,  false, false));
         return list;
     }
 
@@ -102,6 +124,9 @@ public final class ModConfig {
     private void normalize() {
         if (nametagLayout == null || nametagLayout.isEmpty()) {
             nametagLayout = defaultNametagLayout();
+        }
+        if (eloAlignment == null) {
+            eloAlignment = NametagEloAlignment.RIGHT;
         }
         // Remove any entries whose type deserialized as null
         nametagLayout.removeIf(c -> c == null || c.type == null);
@@ -113,9 +138,9 @@ public final class ModConfig {
     // ---- Static helpers -----------------------------------------------------
 
     public static final RankedLadder[] DISPLAY_MODES = {
-        RankedLadder.GLOBAL, RankedLadder.HIGHEST_TIER, RankedLadder.SWORD, RankedLadder.AXE, RankedLadder.UHC, RankedLadder.VANILLA,
-        RankedLadder.MACE, RankedLadder.DIAMOND_POT, RankedLadder.NETHERITE_OP, RankedLadder.SMP,
-        RankedLadder.DIAMOND_SMP
+            RankedLadder.GLOBAL, RankedLadder.HIGHEST_TIER, RankedLadder.SWORD, RankedLadder.AXE, RankedLadder.UHC, RankedLadder.VANILLA,
+            RankedLadder.MACE, RankedLadder.DIAMOND_POT, RankedLadder.NETHERITE_OP, RankedLadder.SMP,
+            RankedLadder.DIAMOND_SMP
     };
 
     // Map.of() caps at 10 entries, so had to change it to Map.ofEntries
@@ -141,7 +166,7 @@ public final class ModConfig {
     /** Advance to the next display mode (wraps around). */
     public void cycleDisplayMode() {
         for (int i = 0; i < DISPLAY_MODES.length; i++) {
-           if (DISPLAY_MODES[i].equals(this.displayMode)) {
+            if (DISPLAY_MODES[i].equals(this.displayMode)) {
                 this.displayMode = DISPLAY_MODES[(i + 1) % DISPLAY_MODES.length];
                 return;
             }

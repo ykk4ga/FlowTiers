@@ -60,12 +60,14 @@ public final class FlowPvPHud {
         }
 
         TextRenderer tr = mc.textRenderer;
-        int x = ModConfig.INSTANCE.hudX;
-        int y = ModConfig.INSTANCE.hudY;
+        int screenW = mc.getWindow().getScaledWidth();
+        int screenH = mc.getWindow().getScaledHeight();
+        int w = tr.getWidth("FlowTiers") + PADDING * 2;
+        int x = Math.max(0, Math.min(ModConfig.INSTANCE.hudX, screenW - w));
+        int y = Math.max(0, Math.min(ModConfig.INSTANCE.hudY, screenH - LINE_HEIGHT));
 
         if (cachedStats == null) {
             String text = fetchFailed ? "FlowTiers: fetch failed" : "FlowTiers: loading...";
-            int w = tr.getWidth(text) + PADDING * 2;
             ctx.fill(x, y, x + w, y + LINE_HEIGHT + PADDING * 2, BG_COLOR);
             ctx.drawText(tr, text, x + PADDING, y + PADDING, GRAY, true);
             return;
@@ -209,7 +211,7 @@ public final class FlowPvPHud {
         if (cachedStats == null) return 130;
         RankedLadder mode = ModConfig.INSTANCE.displayMode;
         String tierElo = cachedStats.getDisplayTier(mode).displayName
-                       + "  " + cachedStats.getDisplayElo(mode) + " ELO";
+                + "  " + cachedStats.getDisplayElo(mode) + " ELO";
         return Math.max(tr.getWidth("FlowTiers"), tr.getWidth(tierElo)) + PADDING * 2;
     }
 

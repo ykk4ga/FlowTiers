@@ -6,22 +6,23 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
+import com.flowpvp.client.config.NametagEloAlignment;
 
 /**
  * Config screen for the FlowTiers mod (opened with the K keybind by default).
- *
+ * <p>
  * Features:
- *  - Drag the HUD widget preview to reposition it.
- *  - Cycle through display modes (Global, Sword, Axe, …).
- *  - Toggle tier display in the tab list and above nametags.
- *  - Press Done or Escape to save and close.
+ * - Drag the HUD widget preview to reposition it.
+ * - Cycle through display modes (Global, Sword, Axe, …).
+ * - Toggle tier display in the tab list and above nametags.
+ * - Press Done or Escape to save and close.
  */
 public final class HudConfigScreen extends Screen {
 
-    private static final int OVERLAY_COLOR = 0x88000000;
-    private static final int BORDER_COLOR  = 0xFF00BFFF;
-    private static final int HINT_COLOR    = 0xFFAAAAAA;
-    private static final int LABEL_COLOR   = 0xFFDDDDDD;
+    private static final int OVERLAY_COLOR = 0xC8000000;
+    private static final int BORDER_COLOR = 0xFF00BFFF;
+    private static final int HINT_COLOR = 0xFFAAAAAA;
+    private static final int LABEL_COLOR = 0xFFDDDDDD;
 
     private final FlowPvPHud hud;
 
@@ -36,6 +37,8 @@ public final class HudConfigScreen extends Screen {
     private ButtonWidget modeButton;
     private ButtonWidget wlToggle;
     private ButtonWidget streakToggle;
+    private ButtonWidget eloAlignToggle;
+    private ButtonWidget suppressToggle;
 
     public HudConfigScreen(FlowPvPHud hud) {
         super(Text.literal("FlowTiers Config"));
@@ -49,11 +52,13 @@ public final class HudConfigScreen extends Screen {
         widgetW = hud.getWidgetWidth(client);
         widgetH = hud.getWidgetHeight();
 
-        int cx      = width / 2;
-        int row2Y   = height - 30;   // Tab / Done / Nametag row
-        int rowNL   = row2Y - 28;    // Nametag Layout button row
-        int row1Y   = rowNL - 28;    // Mode row
-        int row0Y   = row1Y - 46;    // W/L and Streak row
+        int cx = width / 2;
+        int row2Y = height - 30;   // Tab / Done / Nametag row
+        int rowNL = row2Y - 28;    // Nametag Layout button row
+        int row1Y = rowNL - 28;    // Mode row
+        int rowAlign = row1Y - 36;     // ELO side row
+        int rowSuppress = rowAlign - 36;  // Ranked suppress row
+        int row0Y = rowSuppress - 46;
 
         // ---- Row 0: W/L and Streak toggles ----
         wlToggle = ButtonWidget.builder(wlLabel(), btn -> {
@@ -72,6 +77,23 @@ public final class HudConfigScreen extends Screen {
                 .build();
         addDrawableChild(streakToggle);
 
+        eloAlignToggle = ButtonWidget.builder(eloAlignLabel(), btn -> {
+                    ModConfig.INSTANCE.eloAlignment = ModConfig.INSTANCE.eloAlignment.next();
+                    btn.setMessage(eloAlignLabel());
+                })
+                .dimensions(cx - 75, rowAlign, 150, 20)
+                .build();
+        addDrawableChild(eloAlignToggle);
+
+        suppressToggle = ButtonWidget.builder(suppressLabel(), btn -> {
+                    ModConfig.INSTANCE.suppressInRankedMatch =
+                            !ModConfig.INSTANCE.suppressInRankedMatch;
+                    btn.setMessage(suppressLabel());
+                })
+                .dimensions(cx - 110, rowSuppress, 220, 20)
+                .build();
+        addDrawableChild(suppressToggle);
+
         // ---- Row 1: Display mode selector ----
         modeButton = ButtonWidget.builder(modeLabel(), btn -> {
                     ModConfig.INSTANCE.cycleDisplayMode();
@@ -84,7 +106,7 @@ public final class HudConfigScreen extends Screen {
         addDrawableChild(modeButton);
 
         // ---- Row NL: Nametag Layout shortcut ----
-        addDrawableChild(ButtonWidget.builder(Text.literal("Nametag Layout \u2192"), btn -> {
+        addDrawableChild(ButtonWidget.builder(Text.literal("Nametag Layout"), btn -> {
                     if (client != null) client.setScreen(new NametagLayoutScreen(this));
                 })
                 .dimensions(cx - 75, rowNL, 150, 20)
@@ -113,10 +135,17 @@ public final class HudConfigScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        // Dark overlay
+    public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
         ctx.fill(0, 0, width, height, OVERLAY_COLOR);
+    }
 
+    @Override
+    public void renderInGameBackground(DrawContext ctx) {
+        ctx.fill(0, 0, width, height, OVERLAY_COLOR);
+    }
+
+    @Override
+    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         // Hint text at top
         ctx.drawCenteredTextWithShadow(textRenderer,
                 "Drag the widget to reposition. Press Done or Esc to save.",
@@ -124,7 +153,7 @@ public final class HudConfigScreen extends Screen {
 
         // Widget preview
         ctx.fill(widgetX - 1, widgetY - 1, widgetX + widgetW + 1, widgetY + widgetH + 1, BORDER_COLOR);
-        ctx.fill(widgetX,     widgetY,     widgetX + widgetW,     widgetY + widgetH,     0xFF111111);
+        ctx.fill(widgetX, widgetY, widgetX + widgetW, widgetY + widgetH, 0xFF111111);
         ctx.drawTextWithShadow(textRenderer, "FlowTiers", widgetX + 3, widgetY + 3, 0xFF00BFFF);
         ctx.drawTextWithShadow(textRenderer, "Iron III  800 ELO", widgetX + 3, widgetY + 13, 0xFF9AA0A6);
         if (ModConfig.INSTANCE.hudShowPosition) {
@@ -132,22 +161,22 @@ public final class HudConfigScreen extends Screen {
         }
 
         // Row labels
-        int cx    = width / 2;
+        int cx = width / 2;
         int row2Y = height - 30;
         int rowNL = row2Y - 28;
         int row1Y = rowNL - 28;
-        int row0Y = row1Y - 46;
+        int rowAlign = row1Y - 36;
+        int rowSuppress = rowAlign - 36;
+        int row0Y = rowSuppress - 46;
 
         ctx.drawCenteredTextWithShadow(textRenderer, "HUD Win/Loss",
                 cx - 106 + 50, row0Y - 12, HINT_COLOR);
         ctx.drawCenteredTextWithShadow(textRenderer, "HUD Streak",
                 cx + 6 + 50, row0Y - 12, HINT_COLOR);
+        ctx.drawCenteredTextWithShadow(textRenderer, "Display Side",
+                cx, rowAlign - 10, HINT_COLOR);
         ctx.drawCenteredTextWithShadow(textRenderer, "Display Mode",
-                cx, row1Y - 12, HINT_COLOR);
-        ctx.drawCenteredTextWithShadow(textRenderer, "Tab List Tier",
-                cx - 162 + 50, row2Y - 12, HINT_COLOR);
-        ctx.drawCenteredTextWithShadow(textRenderer, "Nametag Tier",
-                cx + 62 + 50, row2Y - 12, HINT_COLOR);
+                cx, row1Y - 10, HINT_COLOR);
 
         // Mode breadcrumb (all modes listed below the mode button)
         // r
@@ -194,7 +223,7 @@ public final class HudConfigScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0 && isOverWidget((int) mouseX, (int) mouseY)) {
-            dragging    = true;
+            dragging = true;
             dragOffsetX = (int) mouseX - widgetX;
             dragOffsetY = (int) mouseY - widgetY;
             return true;
@@ -206,7 +235,7 @@ public final class HudConfigScreen extends Screen {
     public boolean mouseDragged(double mouseX, double mouseY, int button,
                                 double deltaX, double deltaY) {
         if (dragging && button == 0) {
-            widgetX = clamp((int) mouseX - dragOffsetX, 0, width  - widgetW);
+            widgetX = clamp((int) mouseX - dragOffsetX, 0, width - widgetW);
             widgetY = clamp((int) mouseY - dragOffsetY, 0, height - widgetH);
             return true;
         }
@@ -229,13 +258,26 @@ public final class HudConfigScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() { return false; }
+    public boolean shouldPause() {
+        return false;
+    }
 
     // -------------------------------------------------------------------------
 
+    private static Text eloAlignLabel() {
+        NametagEloAlignment a = ModConfig.INSTANCE.eloAlignment;
+        if (a == null) a = NametagEloAlignment.RIGHT;
+        return Text.literal("\u25C4 " + a.label() + "  \u25BA");
+    }
+
+    private static Text suppressLabel() {
+        return Text.literal("Avoid duplicates in Ranked Matches: "
+                + onOff(ModConfig.INSTANCE.suppressInRankedMatch));
+    }
+
     private boolean isOverWidget(int mx, int my) {
         return mx >= widgetX && mx <= widgetX + widgetW
-            && my >= widgetY && my <= widgetY + widgetH;
+                && my >= widgetY && my <= widgetY + widgetH;
     }
 
     private static int clamp(int val, int min, int max) {
@@ -262,5 +304,7 @@ public final class HudConfigScreen extends Screen {
         return Text.literal("Streak: " + onOff(ModConfig.INSTANCE.hudShowStreak));
     }
 
-    private static String onOff(boolean b) { return b ? "ON" : "OFF"; }
+    private static String onOff(boolean b) {
+        return b ? "ON" : "OFF";
+    }
 }
