@@ -6,7 +6,7 @@ A mod that displays player stats from FlowPvP.gg in their nametags, tablist and 
 - Nametag Display: Show player tier, ELO and ranking position for all gamemodes above the players nametag
 - Multiple Game Modes: Supports Global, Sword, Axe, UHC, Vanilla, Mace, Pot, NethOP, SMP and DiamondSMP
 - Configurable: Customize what information to display (DEFAULT KEYBIND: [ K ])
-- Player Lookup: With the command /flowtiers <player> you can lookup a players stats across all gamemodes + global ingame!
+- Player Lookup: With the command /flowrank <player> you can lookup a players stats across all gamemodes + global ingame!
 
 ## Commands
 - /flowrank <player> - Displays the specified player's stats across all gamemodes + global. 
