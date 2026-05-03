@@ -6,6 +6,7 @@ import com.flowpvp.client.data.PlayerStats;
 import com.flowpvp.client.data.RankedLadder;
 import com.flowpvp.client.data.TierInfo;
 import com.flowpvp.client.feature.UpdateChecker;
+import com.flowpvp.client.util.GamemodeIcons;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -94,16 +95,18 @@ public final class FlowPvPHud {
         boolean perLadder = mode != RankedLadder.GLOBAL;
 
         // ---- Compute header line ----
-        String headerLine;
-        if (mode == RankedLadder.GLOBAL) {
-            headerLine = "FlowTiers";
-        } else if (mode == RankedLadder.HIGHEST_TIER) {
-            // Show which ladder was auto-selected as the best
+        // Header is the "FlowTiers" label, optionally followed by a gamemode icon
+        // (PUA glyph from the resource pack font) instead of the old "[Sword ★]" text.
+        String headerLabel = "FlowTiers";
+        String headerIcon  = null;
+        if (mode == RankedLadder.HIGHEST_TIER) {
             RankedLadder best = stats.getHighestTierLadder();
-            headerLine = "FlowTiers  [" + ModConfig.displayModeLabel(best) + " \u2605]";
-        } else {
-            headerLine = "FlowTiers  [" + ModConfig.displayModeLabel(mode) + "]";
+            headerIcon = GamemodeIcons.getIconChar(best);
+        } else if (mode != RankedLadder.GLOBAL) {
+            headerIcon = GamemodeIcons.getIconChar(mode);
         }
+        // Combined string used purely for measurement
+        String headerLine = headerIcon != null ? headerLabel + "  " + headerIcon : headerLabel;
 
         // ---- Compute optional lines ----
         String tierEloLine = buildTierEloLine(cfg, tier, elo);
@@ -148,8 +151,13 @@ public final class FlowPvPHud {
         int tx = x + PADDING;
         int ty = y + PADDING;
 
-        // Header
-        ctx.drawText(tr, headerLine, tx, ty, FLOW_COLOR, true);
+        // Header — draw label in flow color, then icon in white so the PUA glyph
+        // keeps its native colors instead of being tinted blue.
+        ctx.drawText(tr, headerLabel, tx, ty, FLOW_COLOR, true);
+        if (headerIcon != null) {
+            int iconX = tx + tr.getWidth(headerLabel) + tr.getWidth("  ");
+            ctx.drawText(tr, headerIcon, iconX, ty, WHITE, true);
+        }
         ty += LINE_HEIGHT;
 
         // Tier + ELO (rendered in two colors on the same line)

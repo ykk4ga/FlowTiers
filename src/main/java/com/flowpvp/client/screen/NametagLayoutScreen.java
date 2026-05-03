@@ -5,6 +5,7 @@ import com.flowpvp.client.config.NametagComponent;
 import com.flowpvp.client.config.NametagComponentConfig;
 import com.flowpvp.client.data.RankedLadder;
 import com.flowpvp.client.data.TierInfo;
+import com.flowpvp.client.util.GamemodeIcons;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -205,6 +206,7 @@ public class NametagLayoutScreen extends Screen {
 
         net.minecraft.text.MutableText out = net.minecraft.text.Text.empty();
         boolean first = true;
+        NametagComponent prevType = null;
 
         for (NametagComponentConfig comp : layout) {
             if (!comp.enabled || comp.type == null) continue;
@@ -229,14 +231,25 @@ public class NametagLayoutScreen extends Screen {
                             .setStyle(Style.EMPTY.withColor(0xFFD700));
                     break;
                 case GAMEMODE:
+                    // Use the resourcepack PUA glyphs instead of "[Sword ★]" text.
                     if (mode == RankedLadder.HIGHEST_TIER) {
-                        segment = net.minecraft.text.Text.literal("[Sword \u2605]")
+                        // Preview shows the Sword icon (most common best-tier example).
+                        Text icon = GamemodeIcons.getIcon(RankedLadder.SWORD);
+                        segment = icon != null
+                                ? (net.minecraft.text.MutableText) net.minecraft.text.Text.empty().append(icon)
+                                : net.minecraft.text.Text.literal("[Sword \u2605]")
                                 .setStyle(Style.EMPTY.withColor(0xAAAAAA));
                     } else if (mode == RankedLadder.GLOBAL) {
-                        segment = net.minecraft.text.Text.literal("[Global]")
+                        Text icon = GamemodeIcons.getOverallIcon();
+                        segment = icon != null
+                                ? (net.minecraft.text.MutableText) net.minecraft.text.Text.empty().append(icon)
+                                : net.minecraft.text.Text.literal("[Global]")
                                 .setStyle(Style.EMPTY.withColor(0x666666));
                     } else {
-                        segment = net.minecraft.text.Text.literal(
+                        Text icon = GamemodeIcons.getIcon(mode);
+                        segment = icon != null
+                                ? (net.minecraft.text.MutableText) net.minecraft.text.Text.empty().append(icon)
+                                : net.minecraft.text.Text.literal(
                                         "[" + ModConfig.displayModeLabel(mode) + "]")
                                 .setStyle(Style.EMPTY.withColor(0xAAAAAA));
                     }
@@ -245,11 +258,16 @@ public class NametagLayoutScreen extends Screen {
 
             if (segment != null) {
                 if (!first) {
-                    out.append(net.minecraft.text.Text.literal(" | ")
+                    // No divider between icon and tier — just a space so it reads "⚔ Gold I"
+                    boolean iconToTier = prevType == NametagComponent.GAMEMODE
+                            && comp.type == NametagComponent.TIER;
+                    String sep = iconToTier ? " " : " | ";
+                    out.append(net.minecraft.text.Text.literal(sep)
                             .setStyle(Style.EMPTY.withColor(0x888888)));
                 }
                 out.append(segment);
                 first = false;
+                prevType = comp.type;
             }
         }
 
