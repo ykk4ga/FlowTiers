@@ -61,15 +61,15 @@ public final class TierTextBuilder {
                 case GAMEMODE:
                     if (mode == RankedLadder.HIGHEST_TIER) {
                         RankedLadder best = stats.getHighestTierLadder();
-                        Text htIcon = GamemodeIcons.getHtIcon(best);
+                        MutableText htIcon = GamemodeIcons.getHtIcon(best);
                         segment = htIcon != null
-                                ? Text.empty().append(htIcon)
+                                ? htIcon
                                 : Text.literal("[" + ModConfig.displayModeLabel(best) + " \u2605]")
                                         .setStyle(Style.EMPTY.withColor(0xAAAAAA));
                     } else if (mode != RankedLadder.GLOBAL) {
-                        Text icon = GamemodeIcons.getIcon(mode);
+                        MutableText icon = GamemodeIcons.getIcon(mode);
                         segment = icon != null
-                                ? Text.empty().append(icon)
+                                ? icon
                                 : Text.literal("[" + ModConfig.displayModeLabel(mode) + "]")
                                         .setStyle(Style.EMPTY.withColor(0xAAAAAA));
                     }

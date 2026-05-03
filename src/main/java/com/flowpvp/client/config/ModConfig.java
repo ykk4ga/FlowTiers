@@ -134,14 +134,23 @@ public final class ModConfig {
             nametagLayout = defaultNametagLayout();
             return;
         }
-        // Migration: if GAMEMODE exists but appears after TIER, move it to just before TIER.
-        // This silently upgrades old configs so the icon always precedes the tier name.
+        // Migration: scan for GAMEMODE and TIER positions.
         int gamemodeIdx = -1, tierIdx = -1;
         for (int i = 0; i < nametagLayout.size(); i++) {
             NametagComponent type = nametagLayout.get(i).type;
             if (type == NametagComponent.GAMEMODE) gamemodeIdx = i;
-            else if (type == NametagComponent.TIER)   tierIdx   = i;
+            else if (type == NametagComponent.TIER) tierIdx = i;
         }
+
+        // If GAMEMODE is missing entirely, insert it just before TIER (or at position 0).
+        if (gamemodeIdx == -1) {
+            int insertAt = tierIdx >= 0 ? tierIdx : 0;
+            nametagLayout.add(insertAt, new NametagComponentConfig(NametagComponent.GAMEMODE, true, false));
+            gamemodeIdx = insertAt;
+            if (tierIdx >= 0) tierIdx++; // index shifted by insertion
+        }
+
+        // If GAMEMODE appears after TIER, move it to just before TIER.
         if (gamemodeIdx > tierIdx && tierIdx >= 0) {
             NametagComponentConfig gamemode = nametagLayout.remove(gamemodeIdx);
             nametagLayout.add(tierIdx, gamemode);

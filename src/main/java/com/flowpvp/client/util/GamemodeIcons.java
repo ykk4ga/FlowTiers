@@ -1,8 +1,10 @@
 package com.flowpvp.client.util;
 
 import com.flowpvp.client.data.RankedLadder;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 public final class GamemodeIcons {
 
@@ -20,7 +22,7 @@ public final class GamemodeIcons {
     private static final String OVERALL_ICON     = "\uE00A";
 
     /** Icon for a specific ladder. Returns null for GLOBAL or unrecognised values. */
-    public static Text getIcon(RankedLadder ladder) {
+    public static MutableText getIcon(RankedLadder ladder) {
         String ch = switch (ladder) {
             case SWORD        -> SWORD_ICON;
             case AXE          -> AXE_ICON;
@@ -37,17 +39,27 @@ public final class GamemodeIcons {
     }
 
     /** Icon shown when display mode is HIGHEST_TIER — same icon as the resolved best ladder. */
-    public static Text getHtIcon(RankedLadder best) {
+    public static MutableText getHtIcon(RankedLadder best) {
         return getIcon(best);
     }
 
     /** Icon for the GLOBAL / overall display mode. */
-    public static Text getOverallIcon() {
+    public static MutableText getOverallIcon() {
         return icon(OVERALL_ICON);
     }
 
-    private static Text icon(String ch) {
-        return Text.literal(ch).setStyle(Style.EMPTY.withColor(0xFFFFFF));
+    //? if >=1.21.9 {
+    /*private static final Style ICON_STYLE = Style.EMPTY
+            .withFont(new net.minecraft.text.StyleSpriteSource.Font(Identifier.of("flowtiers", "gamemode_icons")))
+            .withColor(0xFFFFFF);*/
+    //?} else {
+    private static final Style ICON_STYLE = Style.EMPTY
+            .withFont(Identifier.of("flowtiers", "gamemode_icons"))
+            .withColor(0xFFFFFF);
+    //?}
+
+    private static MutableText icon(String ch) {
+        return Text.literal(ch).setStyle(ICON_STYLE);
     }
 
     private GamemodeIcons() {}
