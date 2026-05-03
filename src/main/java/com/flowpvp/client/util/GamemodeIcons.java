@@ -4,26 +4,26 @@ import com.flowpvp.client.data.RankedLadder;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 
 public final class GamemodeIcons {
 
     // Private Use Area characters injected into assets/minecraft/font/default.json.
     // No withFont() needed — they live in the default font merged at resource load.
-    private static final String SWORD_ICON       = "\uE001";
-    private static final String AXE_ICON         = "\uE002";
-    private static final String VANILLA_ICON     = "\uE003";
-    private static final String UHC_ICON         = "\uE004";
-    private static final String MACE_ICON        = "\uE005";
-    private static final String NETHERITE_ICON   = "\uE006";
-    private static final String POT_ICON         = "\uE007";
-    private static final String SMP_ICON         = "\uE008";
-    private static final String DIAMOND_SMP_ICON = "\uE009";
-    private static final String OVERALL_ICON     = "\uE00A";
+    public static final String SWORD_ICON       = "\uE001";
+    public static final String AXE_ICON         = "\uE002";
+    public static final String VANILLA_ICON     = "\uE003";
+    public static final String UHC_ICON         = "\uE004";
+    public static final String MACE_ICON        = "\uE005";
+    public static final String NETHERITE_ICON   = "\uE006";
+    public static final String POT_ICON         = "\uE007";
+    public static final String SMP_ICON         = "\uE008";
+    public static final String DIAMOND_SMP_ICON = "\uE009";
+    public static final String OVERALL_ICON     = "\uE00A";
 
-    /** Icon for a specific ladder. Returns null for GLOBAL or unrecognised values. */
-    public static MutableText getIcon(RankedLadder ladder) {
-        String ch = switch (ladder) {
+    /** Raw character (or null) for a specific ladder — useful for String-based draw calls. */
+    public static String getIconChar(RankedLadder ladder) {
+        if (ladder == null) return null;
+        return switch (ladder) {
             case SWORD        -> SWORD_ICON;
             case AXE          -> AXE_ICON;
             case VANILLA      -> VANILLA_ICON;
@@ -35,6 +35,16 @@ public final class GamemodeIcons {
             case DIAMOND_SMP  -> DIAMOND_SMP_ICON;
             default           -> null;
         };
+    }
+
+    /** Raw overall/global icon character. */
+    public static String getOverallIconChar() {
+        return OVERALL_ICON;
+    }
+
+    /** Icon for a specific ladder. Returns null for GLOBAL or unrecognised values. */
+    public static MutableText getIcon(RankedLadder ladder) {
+        String ch = getIconChar(ladder);
         return ch == null ? null : icon(ch);
     }
 
@@ -48,18 +58,8 @@ public final class GamemodeIcons {
         return icon(OVERALL_ICON);
     }
 
-    //? if >=1.21.9 {
-    /*private static final Style ICON_STYLE = Style.EMPTY
-            .withFont(new net.minecraft.text.StyleSpriteSource.Font(Identifier.of("flowtiers", "gamemode_icons")))
-            .withColor(0xFFFFFF);*/
-    //?} else {
-    private static final Style ICON_STYLE = Style.EMPTY
-            .withFont(Identifier.of("flowtiers", "gamemode_icons"))
-            .withColor(0xFFFFFF);
-    //?}
-
     private static MutableText icon(String ch) {
-        return Text.literal(ch).setStyle(ICON_STYLE);
+        return Text.literal(ch).setStyle(Style.EMPTY.withColor(0xFFFFFF));
     }
 
     private GamemodeIcons() {}

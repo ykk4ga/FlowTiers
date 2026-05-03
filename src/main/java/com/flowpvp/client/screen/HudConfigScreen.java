@@ -32,7 +32,6 @@ public final class HudConfigScreen extends Screen {
     private int dragOffsetX, dragOffsetY;
 
     // Buttons that need dynamic label updates
-    private ButtonWidget hudToggle;
     private ButtonWidget tabListToggle;
     private ButtonWidget nametagToggle;
     private ButtonWidget modeButton;
@@ -40,6 +39,7 @@ public final class HudConfigScreen extends Screen {
     private ButtonWidget streakToggle;
     private ButtonWidget eloAlignToggle;
     private ButtonWidget suppressToggle;
+    private ButtonWidget hudEnableToggle;
 
     public HudConfigScreen(FlowPvPHud hud) {
         super(Text.literal("FlowTiers Config"));
@@ -54,13 +54,22 @@ public final class HudConfigScreen extends Screen {
         widgetH = hud.getWidgetHeight();
 
         int cx = width / 2;
-        int row2Y = height - 30;   // Tab / Done / Nametag row
-        int rowHud = row2Y - 28;   // HUD enable/disable row
-        int rowNL = rowHud - 28;   // Nametag Layout button row
-        int row1Y = rowNL - 28;    // Mode row
-        int rowAlign = row1Y - 36;     // ELO side row
-        int rowSuppress = rowAlign - 36;  // Ranked suppress row
-        int row0Y = rowSuppress - 46;
+        int row2Y = height - 30;            // Tab / Done / Nametag row
+        int rowNL = row2Y - 28;             // Nametag Layout button row
+        int row1Y = rowNL - 28;             // Mode row
+        int rowAlign = row1Y - 36;          // ELO side row
+        int rowSuppress = rowAlign - 36;    // Ranked suppress row
+        int row0Y = rowSuppress - 46;       // W/L + streak row
+        int rowEnable = row0Y - 36;         // HUD enable row (NEW)
+
+        // ---- Row Enable: master HUD on/off ----
+        hudEnableToggle = ButtonWidget.builder(hudEnableLabel(), btn -> {
+                    ModConfig.INSTANCE.hudEnabled = !ModConfig.INSTANCE.hudEnabled;
+                    btn.setMessage(hudEnableLabel());
+                })
+                .dimensions(cx - 75, rowEnable, 150, 20)
+                .build();
+        addDrawableChild(hudEnableToggle);
 
         // ---- Row 0: W/L and Streak toggles ----
         wlToggle = ButtonWidget.builder(wlLabel(), btn -> {
@@ -114,15 +123,6 @@ public final class HudConfigScreen extends Screen {
                 .dimensions(cx - 75, rowNL, 150, 20)
                 .build());
 
-        // ---- Row HUD: HUD enable toggle ----
-        hudToggle = ButtonWidget.builder(hudLabel(), btn -> {
-                    ModConfig.INSTANCE.hudEnabled = !ModConfig.INSTANCE.hudEnabled;
-                    btn.setMessage(hudLabel());
-                })
-                .dimensions(cx - 75, rowHud, 150, 20)
-                .build();
-        addDrawableChild(hudToggle);
-
         // ---- Row 2: Tab list / Done / Nametag ----
         tabListToggle = ButtonWidget.builder(tabListLabel(), btn -> {
                     ModConfig.INSTANCE.showTierInTabList = !ModConfig.INSTANCE.showTierInTabList;
@@ -171,16 +171,18 @@ public final class HudConfigScreen extends Screen {
             ctx.drawTextWithShadow(textRenderer, "#15,041 globally", widgetX + 3, widgetY + 23, 0xFFFFD700);
         }
 
-        // Row labels (mirror the layout from init())
+        // Row labels
         int cx = width / 2;
         int row2Y = height - 30;
-        int rowHud = row2Y - 28;
-        int rowNL = rowHud - 28;
+        int rowNL = row2Y - 28;
         int row1Y = rowNL - 28;
         int rowAlign = row1Y - 36;
         int rowSuppress = rowAlign - 36;
         int row0Y = rowSuppress - 46;
+        int rowEnable = row0Y - 36;
 
+        ctx.drawCenteredTextWithShadow(textRenderer, "HUD",
+                cx, rowEnable - 10, HINT_COLOR);
         ctx.drawCenteredTextWithShadow(textRenderer, "HUD Win/Loss",
                 cx - 106 + 50, row0Y - 12, HINT_COLOR);
         ctx.drawCenteredTextWithShadow(textRenderer, "HUD Streak",
@@ -189,12 +191,6 @@ public final class HudConfigScreen extends Screen {
                 cx, rowAlign - 10, HINT_COLOR);
         ctx.drawCenteredTextWithShadow(textRenderer, "Display Mode",
                 cx, row1Y - 10, HINT_COLOR);
-
-        // Mode breadcrumb (all modes listed below the mode button)
-        // r
-//        ctx.drawCenteredTextWithShadow(textRenderer,
-//                "Global \u00BB Sword \u00BB Axe \u00BB UHC \u00BB Vanilla \u00BB Mace \u00BB Diamond Pot \u00BB Netherite OP \u00BB SMP \u00BB Diamond SMP",
-//                cx, row1Y + 28, 0xFF555555);
 
         super.render(ctx, mouseX, mouseY, delta);
     }
@@ -276,6 +272,10 @@ public final class HudConfigScreen extends Screen {
 
     // -------------------------------------------------------------------------
 
+    private static Text hudEnableLabel() {
+        return Text.literal("HUD: " + onOff(ModConfig.INSTANCE.hudEnabled));
+    }
+
     private static Text eloAlignLabel() {
         NametagEloAlignment a = ModConfig.INSTANCE.eloAlignment;
         if (a == null) a = NametagEloAlignment.RIGHT;
@@ -314,10 +314,6 @@ public final class HudConfigScreen extends Screen {
 
     private static Text streakLabel() {
         return Text.literal("Streak: " + onOff(ModConfig.INSTANCE.hudShowStreak));
-    }
-
-    private static Text hudLabel() {
-        return Text.literal("HUD: " + onOff(ModConfig.INSTANCE.hudEnabled));
     }
 
     private static String onOff(boolean b) {

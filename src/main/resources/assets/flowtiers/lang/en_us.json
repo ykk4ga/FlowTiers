@@ -2,5 +2,7 @@
   "key.flowtiers.toggle_hud": "Toggle FlowTiers HUD",
   "key.flowtiers.open_config": "FlowTiers Config",
   "key.categories.flowtiers": "FlowTiers",
-  "flowtiers.categories": "FlowTiers"
+  "flowtiers.categories": "FlowTiers",
+  "key.flowtiers.cycle_mode": "Cycle Display Mode (forward)",
+  "key.flowtiers.cycle_mode_back": "Cycle Display Mode (back)"
 }

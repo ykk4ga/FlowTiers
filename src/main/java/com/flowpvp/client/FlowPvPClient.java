@@ -3,12 +3,14 @@ package com.flowpvp.client;
 import com.flowpvp.FlowPvPMod;
 import com.flowpvp.client.command.FlowRankCommand;
 import com.flowpvp.client.config.ModConfig;
+import com.flowpvp.client.data.RankedLadder;
 import com.flowpvp.client.data.StatsCache;
 import com.flowpvp.client.feature.PlayerStatsScanner;
 import com.flowpvp.client.feature.UpdateChecker;
 import com.flowpvp.client.hud.FlowPvPHud;
 import com.flowpvp.client.screen.HudConfigScreen;
 import com.flowpvp.client.screen.LeaderboardScreen;
+import com.flowpvp.client.util.GamemodeIcons;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -20,6 +22,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 //?}
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
@@ -31,6 +34,8 @@ public class FlowPvPClient implements ClientModInitializer {
     public static KeyBinding TOGGLE_HUD_KEY;
     public static KeyBinding OPEN_CONFIG_KEY;
     public static KeyBinding OPEN_LEADERBOARD_KEY;
+    public static KeyBinding CYCLE_MODE_KEY;
+    public static KeyBinding CYCLE_MODE_BACK_KEY;
 
     @Override
     public void onInitializeClient() {
@@ -79,6 +84,31 @@ public class FlowPvPClient implements ClientModInitializer {
                 //?}
         ));
 
+        // Cycle to next display mode (forward). Unbound by default — bind it from
+        // Minecraft's controls menu. Mirrors the ▸ arrow in HudConfigScreen.
+        CYCLE_MODE_KEY = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.flowtiers.cycle_mode",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                //? if >=1.21.9 {
+                /*flowtiersCat*/
+                //?} else {
+                "key.categories.flowtiers"
+                //?}
+        ));
+
+        // Cycle to previous display mode (backward). Mirrors the ◂ arrow.
+        CYCLE_MODE_BACK_KEY = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.flowtiers.cycle_mode_back",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                //? if >=1.21.9 {
+                /*flowtiersCat*/
+                //?} else {
+                "key.categories.flowtiers"
+                //?}
+        ));
+
         // Register HUD renderer
         FlowPvPHud hud = new FlowPvPHud();
         //? if >=1.21.9 {
@@ -109,6 +139,20 @@ public class FlowPvPClient implements ClientModInitializer {
             while (OPEN_LEADERBOARD_KEY.wasPressed()) {
                 client.setScreen(new LeaderboardScreen());
             }
+            while (CYCLE_MODE_KEY.wasPressed()) {
+                ModConfig.INSTANCE.cycleDisplayMode();
+                ModConfig.save();
+                if (client.player != null) {
+                    client.player.sendMessage(buildModeToast(ModConfig.INSTANCE.displayMode), true);
+                }
+            }
+            while (CYCLE_MODE_BACK_KEY.wasPressed()) {
+                ModConfig.INSTANCE.cycleDisplayModeBack();
+                ModConfig.save();
+                if (client.player != null) {
+                    client.player.sendMessage(buildModeToast(ModConfig.INSTANCE.displayMode), true);
+                }
+            }
         });
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
@@ -120,6 +164,26 @@ public class FlowPvPClient implements ClientModInitializer {
             PlayerStatsScanner.tick();
             sendUpdateNotificationIfReady(client);
         });
+    }
+
+    // -------------------------------------------------------------------------
+    // Toast builder for mode-cycle keybinds — appends the gamemode PUA icon
+    // after the label so the action-bar message reads "[FlowTiers] Mode: Sword ⚔"
+    // (icon is drawn in white so the resourcepack glyph keeps its native colors).
+    // -------------------------------------------------------------------------
+    private static MutableText buildModeToast(RankedLadder mode) {
+        MutableText msg = Text.literal("[FlowTiers] Mode: " + ModConfig.displayModeLabel(mode))
+                .setStyle(Style.EMPTY.withColor(0x00BFFF));
+
+        String iconChar = GamemodeIcons.getIconChar(mode);
+        if (iconChar == null && (mode == RankedLadder.GLOBAL || mode == RankedLadder.HIGHEST_TIER)) {
+            iconChar = GamemodeIcons.getOverallIconChar();
+        }
+        if (iconChar != null) {
+            msg.append(Text.literal("  " + iconChar)
+                    .setStyle(Style.EMPTY.withColor(0xFFFFFF)));
+        }
+        return msg;
     }
 
     // -------------------------------------------------------------------------
