@@ -59,21 +59,34 @@ public final class TierTextBuilder {
                     }
                     break;
                 case GAMEMODE:
-                    if (mode == RankedLadder.HIGHEST_TIER) {
-                        RankedLadder best = stats.getHighestTierLadder();
-                        MutableText htIcon = GamemodeIcons.getHtIcon(best);
-                        segment = htIcon != null
-                                ? htIcon
-                                : Text.literal("[" + ModConfig.displayModeLabel(best) + " \u2605]")
-                                        .setStyle(Style.EMPTY.withColor(0xAAAAAA));
-                    } else if (mode != RankedLadder.GLOBAL) {
-                        MutableText icon = GamemodeIcons.getIcon(mode);
-                        segment = icon != null
-                                ? icon
-                                : Text.literal("[" + ModConfig.displayModeLabel(mode) + "]")
-                                        .setStyle(Style.EMPTY.withColor(0xAAAAAA));
-                    }
-                    break;
+    if (mode == RankedLadder.HIGHEST_TIER) {
+        RankedLadder best = stats.getHighestTierLadder();
+        MutableText htIcon = GamemodeIcons.getHtIcon(best);
+
+        segment = htIcon != null
+                ? htIcon
+                : Text.literal("[" + ModConfig.displayModeLabel(best) + " ★]")
+                        .setStyle(Style.EMPTY.withColor(0xAAAAAA));
+
+    } else if (mode == RankedLadder.GLOBAL) {
+
+        MutableText globalIcon = GamemodeIcons.getOverallIcon();
+
+        segment = globalIcon != null
+                ? globalIcon
+                : Text.literal("[GLOBAL]")
+                        .setStyle(Style.EMPTY.withColor(0xAAAAAA));
+
+    } else {
+
+        MutableText icon = GamemodeIcons.getIcon(mode);
+
+        segment = icon != null
+                ? icon
+                : Text.literal("[" + ModConfig.displayModeLabel(mode) + "]")
+                        .setStyle(Style.EMPTY.withColor(0xAAAAAA));
+    }
+    break;
             }
 
             if (segment != null) {
